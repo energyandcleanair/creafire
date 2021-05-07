@@ -22,12 +22,16 @@
 #' @examples
 fill_dashboard <- function(city,
                     source,
-                    country,
+                    source_city=NULL,
+                    country=NULL,
 		                process_id="city_day_mad",
                     date_from="2017-01-01",
                     poll=c("pm25"),
                     date_to=lubridate::today(),
-                    upload_results=T
+                    upload_results=T,
+		                duration_hour=120,
+		                buffer_km=50,
+		                height=NULL #if null or NA, will be PBL average
 ){
 
   print("Getting measurements")
@@ -35,6 +39,7 @@ fill_dashboard <- function(city,
                            process_id=process_id,
                            poll=poll,
                            city=city,
+                           source_city=source_city,
                            date_from=date_from,
                            source=source,
                            with_geometry = T,
@@ -50,10 +55,14 @@ fill_dashboard <- function(city,
   lapply(location_ids,
          function(location_id){
 
-           file.trajs <- file.path("upload", paste0(location_id,".trajs.RDS"))
-           file.fires <- file.path("upload", paste0(location_id,".fires.RDS"))
-           file.meas <- file.path("upload", paste0(location_id,".meas.RDS"))
-           file.weather <- file.path("upload", paste0(location_id,".weather.RDS"))
+           suffix <- sprintf("%skm.%sh.%s.RDS", buffer_km, duration_hour,ifelse(is.null(height)|is.na(height),"pbl",paste0(height,"m")))
+           prefix <- location_id
+           file.trajs <- file.path("upload", sprintf("%s.trajs.%s", prefix, suffix))
+           file.fires <- file.path("upload", sprintf("%s.fires.%s", prefix, suffix))
+           file.meas <- file.path("upload", sprintf("%s.meas.%s", prefix, suffix))
+
+           file.weather.cache <- file.path("cache", sprintf("%s.weather.%s", prefix, suffix)) # The version cached
+           file.weather <- file.path("upload", sprintf("%s.weather.%s", prefix, suffix)) # A simplified version to upload
 
            print("Deweathering")
            m.dew <- creadeweather::deweather(meas=m[m$location_id==location_id,],
@@ -66,9 +75,12 @@ fill_dashboard <- function(city,
                                              lag=3, #c(0,1,2,3),
                                              training.fraction=0.9, #c(0.8, 0.9, 1),
                                              save_trajs_filename=file.trajs,
-                                             save_weather_filename=file.weather,
-                                             # read_weather_filename=file.cache.weather,
-                                             keep_model = F,
+                                             save_weather_filename=file.weather.cache,
+                                             fire_duration_hour = duration_hour,
+                                             fire_buffer_km = buffer_km,
+                                             trajs_height=height,
+                                             read_weather_filename=file.weather.cache,
+                                             keep_model = T,
                                              link=c("linear"),
                                              upload_results = F
            )
@@ -76,13 +88,12 @@ fill_dashboard <- function(city,
 
            print("Done")
 
-
            # Export measurements -----------------------------------------------------
            m.dew %>%
              filter(output %in% c("counterfactual")) %>%
              tidyr::unnest(normalised) %>%
              dplyr::select(
-               location_id, date, poll, unit, source, observed, predicted, predicted_nofire
+               location_id, date, poll, unit, source, observed, predicted, predicted_nofire, model
              ) %>%
              saveRDS(file.meas)
 
@@ -127,11 +138,12 @@ fill_dashboard <- function(city,
 
            # Export weather (lite) -----------------------------------------------------
            # Will be read online each time. Better have something as light as possible
-           weather <- readRDS(file.weather)
+           weather <- readRDS(file.weather.cache)
            weather.lite <- weather %>%
              dplyr::select(location_id=station_id, meas_weather) %>%
-             tidyr::unnest(meas_weather) %>%
-             dplyr::select(location_id, date, fire_frp, fire_count)
+             tidyr::unnest(meas_weather)
+             # %>%
+             # dplyr::select(location_id, date, fire_frp, fire_count, precip, )
 
            saveRDS(weather.lite, file.weather)
 
@@ -154,3 +166,21 @@ fill_dashboard <- function(city,
          })
 }
 
+
+wd <- "../../development/crea/defire/"
+fs <- list.files(file.path(wd, "cache"),"*weather*")
+
+lapply(fs,
+       function(f){
+         weather <- readRDS(file.path(wd,"cache",f))
+         weather.lite <- weather %>%
+           dplyr::select(location_id=station_id, meas_weather) %>%
+           tidyr::unnest(meas_weather)
+           # dplyr::select(location_id, date, fire_frp, fire_count, precip)
+
+         saveRDS(weather.lite, file.path(wd,"upload",f))
+         googleCloudStorageR::gcs_upload(file.path(wd,"upload",f),
+                                         bucket=trajs.bucket,
+                                         name=paste0(trajs.folder,"/",basename(f)),
+                                         predefinedAcl="default")
+       })
