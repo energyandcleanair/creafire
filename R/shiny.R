@@ -24,7 +24,7 @@ deploy_shiny <- function() {
     "energyandcleanair/leaflet.extras2",
     "energyandcleanair/creafire")
 
-  devtools::install_github(urls, force=T, upgrade="never")
+  devtools::install_github(urls, force=T, upgrade="never", auth_token = Sys.getenv("GITHUB_PAT"))
 
   library(lubridate)
   library(leaflet.extras2)
