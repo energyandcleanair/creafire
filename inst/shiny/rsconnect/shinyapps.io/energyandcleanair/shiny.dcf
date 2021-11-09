@@ -1,0 +1,10 @@
+name: shiny
+title:
+username:
+account: energyandcleanair
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3446567
+bundleId: 4063182
+url: https://energyandcleanair.shinyapps.io/shiny/
+when: 1609910631.85232

@@ -1,0 +1,28 @@
+Package: creafire
+Type: Package
+Title: Build and browse fire/biomass burning information relevant for air quality
+Version: 0.2
+Author: Hubert Thieriot
+Maintainer: Hubert Thieriot <hubert.thieriot@gmail.com>
+Description: creafire package offers a set of functions and a shiny dashboard to build and display fire-related information relevant to air quality
+License: TBC
+Encoding: UTF-8
+LazyData: true
+Imports:
+    magrittr,
+    tidyverse,
+    rcrea,
+    creadeweather,
+    creatrajs,
+    leaflet.extras2
+Remotes:
+    tidyverse/lubridate,
+    energyandcleanair/leaflet.extras2
+    energyandcleanair/rcrea
+    energyandcleanair/creadeweather
+    energyandcleanair/creatrajs
+Suggests: 
+    testthat (>= 2.1.0)
+VignetteBuilder:
+    knitr
+RoxygenNote: 7.1.1

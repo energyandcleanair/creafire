@@ -1,0 +1,10 @@
+name: airquality
+title:
+username:
+account: crea
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 5041576
+bundleId: 5210816
+url: https://crea.shinyapps.io/airquality/
+when: 1636000005.13738

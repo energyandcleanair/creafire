@@ -1,0 +1,10 @@
+name: airquality
+title:
+username:
+account: energyandcleanair
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3446571
+bundleId: 5189669
+url: https://energyandcleanair.shinyapps.io/airquality/
+when: 1635495850.88301

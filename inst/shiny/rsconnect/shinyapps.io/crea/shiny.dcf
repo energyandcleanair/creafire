@@ -1,0 +1,10 @@
+name: shiny
+title:
+username:
+account: crea
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1756021
+bundleId: 4044224
+url: https://crea.shinyapps.io/shiny/
+when: 1609384965.48424

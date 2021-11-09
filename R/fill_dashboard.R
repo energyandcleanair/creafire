@@ -20,14 +20,16 @@
 #' @export
 #'
 #' @examples
-fill_dashboard <- function(city,
-                    source,
-                    country,
-		                process_id="city_day_mad",
-                    date_from="2017-01-01",
-                    poll=c("pm25"),
-                    date_to=lubridate::today(),
-                    upload_results=T
+defire <- function(city,
+                   source,
+                   country,
+		               process_id="city_day_mad",
+                   date_from="2017-01-01",
+                   poll=c("pm25"),
+                   date_to=lubridate::today(),
+                   upload_results=T,
+		               upload_folder="upload"
+		               
 ){
 
   print("Getting measurements")
@@ -42,18 +44,16 @@ fill_dashboard <- function(city,
   print("Done")
   location_ids <- unique(m$location_id)
 
-  dir.create("cache", showWarnings = F)
-  dir.create("upload", showWarnings = F)
-  fs <- list.files(file.path("upload"), include.dirs = F, full.names = T, recursive = T)
-  # file.remove(fs)
+  dir.create(upload_folder, showWarnings = F)
+  fs <- list.files(upload_folder, include.dirs = F, full.names = T, recursive = T)
 
   lapply(location_ids,
          function(location_id){
 
-           file.trajs <- file.path("upload", paste0(location_id,".trajs.RDS"))
-           file.fires <- file.path("upload", paste0(location_id,".fires.RDS"))
-           file.meas <- file.path("upload", paste0(location_id,".meas.RDS"))
-           file.weather <- file.path("upload", paste0(location_id,".weather.RDS"))
+           file.trajs <- file.path(upload_folder, paste0(location_id,".trajs.RDS"))
+           file.fires <- file.path(upload_folder, paste0(location_id,".fires.RDS"))
+           file.meas <- file.path(upload_folder, paste0(location_id,".meas.RDS"))
+           file.weather <- file.path(upload_folder, paste0(location_id,".weather.RDS"))
 
            print("Deweathering")
            m.dew <- creadeweather::deweather(meas=m[m$location_id==location_id,],
@@ -67,7 +67,6 @@ fill_dashboard <- function(city,
                                              training.fraction=0.9, #c(0.8, 0.9, 1),
                                              save_trajs_filename=file.trajs,
                                              save_weather_filename=file.weather,
-                                             # read_weather_filename=file.cache.weather,
                                              keep_model = F,
                                              link=c("linear"),
                                              upload_results = F
