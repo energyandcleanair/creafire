@@ -33,7 +33,8 @@ defire <- function(city,
 		               cache_folder="cache",
 		               duration_hour=120,
 		               buffer_km=50,
-		               height=NULL #if null or NA, will be PBL average
+		               height=10, #if null or NA, will be PBL average
+		               force_recompute_weather=F
 ){
 
   print("Getting measurements")
@@ -54,15 +55,55 @@ defire <- function(city,
 
   lapply(location_ids,
          function(location_id){
+           
+           message("Getting measurements: ", location_id)
+           m <- rcrea::measurements(location_id=location_id,
+                                    process_id=process_id,
+                                    poll=poll,
+                                    source_city=source_city,
+                                    date_from=date_from,
+                                    source=source,
+                                    with_geometry = T,
+                                    with_metadata = T)
+           print("Done")
+           
+           # Trajs are the same whether or not we use viirs or gfas
+           suffix_trajs <- sprintf("%skm.%sh.%s.RDS",
+                                   buffer_km,
+                                   duration_hour,
+                                   ifelse(is.null(height)|is.na(height),"pbl",paste0(height,"m")))
+           
+           suffix <- gsub("\\.RDS",
+                          ifelse(fire_source=="viirs",".viirs.RDS",".gfas.RDS"),
+                          suffix_trajs)
+           
 
-           suffix <- sprintf("%skm.%sh.%s.RDS", buffer_km, duration_hour,ifelse(is.null(height)|is.na(height),"pbl",paste0(height,"m")))
            prefix <- location_id
-           file.trajs <- file.path(upload_folder, sprintf("%s.trajs.%s", prefix, suffix))
+           
+           file.trajs <- file.path(upload_folder, sprintf("%s.trajs.%s", prefix, suffix_trajs))
            file.fires <- file.path(upload_folder, sprintf("%s.fires.%s", prefix, suffix))
            file.meas <- file.path(upload_folder, sprintf("%s.meas.%s", prefix, suffix))
-           file.weather.cache <- file.path(cache_folder, sprintf("%s.weather.%s", prefix, suffix)) # The version cached
-           file.weather <- file.path(upload_folder, sprintf("%s.weather.%s", prefix, suffix)) # A simplified version to upload
+           file.weather <- file.path(upload_folder, sprintf("%s.weather.%s", prefix, suffix))
+           file.weatherlite <- file.path(upload_folder, sprintf("%s.weatherlite.%s", prefix, suffix)) # A liter version to be used by dashboard
 
+           # Update weather data if required
+           if(!force_recompute_weather & file.exists(file.weather)){
+             
+             weather <- readRDS(file.weather) %>%
+               update_weather(meas=m,
+                              duration_hour=duration_hour,
+                              buffer_km=buffer_km,
+                              height=height)
+             saveRDS(weather, file.weather)
+            
+             # Use it
+             read_weather_filename <- file.weather
+           }else{
+             read_weather_filename <- NULL
+           }
+           
+           
+           
            print("Deweathering")
            m.dew <- creadeweather::deweather(meas=m[m$location_id==location_id,],
                                              poll=poll,
@@ -74,11 +115,11 @@ defire <- function(city,
                                              lag=3, 
                                              training.fraction=0.9,
                                              save_trajs_filename=file.trajs,
-                                             save_weather_filename=file.weather.cache,
+                                             save_weather_filename=file.weather,
                                              fire_duration_hour = duration_hour,
                                              fire_buffer_km = buffer_km,
                                              trajs_height=height,
-                                             read_weather_filename=file.weather.cache,
+                                             read_weather_filename=read_weather_filename,
                                              keep_model = T,
                                              link=c("linear"),
                                              upload_results = F
@@ -108,32 +149,6 @@ defire <- function(city,
              ))
            saveRDS(trajs.lite, file.trajs)
 
-
-           # Export fires ------------------------------------------------------------
-           # print("Downloading fires")
-           # min_fire_date <- "2021-01-01" #Can be quite heavy otherwise
-           #
-           # creatrajs::fire.download(date_from=as.Date(min_fire_date)-lubridate::hours(72),
-           #                          date_to=max(trajs$date))
-           # print("Done")
-           #
-           # print("Buffering")
-           # trajs <- trajs %>%
-           #   dplyr::filter(date>=min_fire_date) %>%
-           #   rowwise() %>%
-           #   mutate(extent=creatrajs::trajs.buffer(trajs=trajs, buffer_km=10))
-           # print("Done")
-           #
-           # extent <- sf::as_Spatial(trajs$extent[!sf::st_is_empty(trajs$extent)])
-           #
-           # print("Reading fires")
-           # fires <- creatrajs::fire.read(
-           #   date_from="2020-01-01",
-           #   date_to=max(trajs$date),
-           #   extent.sp=extent)
-           #
-           # saveRDS(fires, file.fires)
-           # print("Done")
 
            # Export weather (lite) -----------------------------------------------------
            # Will be read online each time. Better have something as light as possible
