@@ -17,9 +17,9 @@ Imports:
     leaflet.extras2
 Remotes:
     tidyverse/lubridate,
-    energyandcleanair/leaflet.extras2
-    energyandcleanair/rcrea
-    energyandcleanair/creadeweather
+    energyandcleanair/leaflet.extras2,
+    energyandcleanair/rcrea,
+    energyandcleanair/creadeweather,
     energyandcleanair/creatrajs
 Suggests: 
     testthat (>= 2.1.0)

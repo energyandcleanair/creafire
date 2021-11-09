@@ -22,13 +22,13 @@ deploy_shiny <- function() {
   urls <- c(
     "tidyverse/lubridate",
     "energyandcleanair/leaflet.extras2",
-    "energyandcleanair/rcrea")
+    "energyandcleanair/creafire")
 
   devtools::install_github(urls, force=T, upgrade="never")
 
   library(lubridate)
   library(leaflet.extras2)
-  library(rcrea)
+  library(creafire)
 
   try(dotenv::load_dot_env())
   try(readRenviron(".Renviron"))
