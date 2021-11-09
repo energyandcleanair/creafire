@@ -19,6 +19,9 @@ deploy_shiny <- function() {
   if(!require(dotenv)) install.packages('dotenv')
   if(!require(devtools)) install.packages('devtools')
 
+  try(dotenv::load_dot_env())
+  try(readRenviron(".Renviron"))
+  
   urls <- c(
     "tidyverse/lubridate",
     "energyandcleanair/leaflet.extras2",
@@ -30,8 +33,6 @@ deploy_shiny <- function() {
   library(leaflet.extras2)
   library(creafire)
 
-  try(dotenv::load_dot_env())
-  try(readRenviron(".Renviron"))
 
   rsconnect::setAccountInfo(name=Sys.getenv("SHINYAPP_ACCOUNT"),
                             token=Sys.getenv("SHINYAPP_TOKEN"),

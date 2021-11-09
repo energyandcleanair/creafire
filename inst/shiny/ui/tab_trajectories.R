@@ -20,7 +20,7 @@ tabPanel("Trajectories",
              div(
                class="row-inline",
                height=50,
-               uiOutput("selectInputTrajsCountry"),
+               uiOutput("selectInputTrajsCountry") %>% withSpinner(color="#8cc9D0"),
                uiOutput("selectInputTrajsCity")
              ),
              div(
@@ -45,23 +45,3 @@ tabPanel("Trajectories",
 
          )
 )
-# tabPanel("Trajectories", value="trajectories", fluid = TRUE,
-#          sidebarLayout(
-#              sidebarPanel(
-#                  width = 2,
-#                  uiOutput("selectInputTrajsCountry"),
-#                  uiOutput("selectInputTrajsCity"),
-#                  uiOutput("selectInputTrajsDates")
-#
-#                  # downloadButton("trajs_download_jpg", "Download (.jpg)"),
-#              ),
-#
-#              mainPanel(
-#                  width=10,
-#                  uiOutput("imageTrajs")  %>% withSpinner(color="#0dc5c1")
-#                  # plotOutput("exc_status_map"),
-#                  # DT::dataTableOutput("exc_status_table")
-#                  # DT::dataTableOutput("trajs_table")
-#              )
-#          )
-# )
