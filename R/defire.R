@@ -20,23 +20,24 @@
 #' @export
 #'
 #' @examples
-fill_dashboard <- function(
-  location_ids=NULL,
-  level="city",
-  city=NULL,
-  source,
-  source_city=NULL,
-  country=NULL,
-  process_id="city_day_mad",
-  date_from="2015-01-01",
-  fire_source="viirs",
-  poll=c("pm25"),
-  date_to=lubridate::today(),
-  upload_results=T,
-  duration_hour=120,
-  buffer_km=50,
-  force_recompute=F,
-  height=NULL #if null or NA, will be PBL average
+defire <- function(location_ids=NULL,
+                   level="city",
+                   city=NULL,
+                   source=NULL,
+                   source_city=NULL,
+                   country=NULL,
+		               process_id="city_day_mad",
+                   date_from="2016-01-01",
+                   poll=c("pm25"),
+                   date_to=lubridate::today(),
+                   upload_results=T,
+		               upload_folder=upload_folder,
+		               cache_folder="cache",
+		               duration_hour=120,
+		               buffer_km=50,
+		               height=10, #if null or NA, will be PBL average
+		               force_recompute_weather=F,
+		               fire_source="viirs"
 ){
 
   if(is.null(location_ids)){
@@ -52,10 +53,8 @@ fill_dashboard <- function(
   message(length(location_ids)," locations found")
 
 
-  dir.create("cache", showWarnings = F)
-  dir.create("upload", showWarnings = F)
-  fs <- list.files(file.path("upload"), include.dirs = F, full.names = T, recursive = T)
-  # file.remove(fs)
+  dir.create(upload_folder, showWarnings = F)
+  fs <- list.files(upload_folder, include.dirs = F, full.names = T, recursive = T)
 
   lapply(location_ids,
          function(location_id){
@@ -69,42 +68,57 @@ fill_dashboard <- function(
                                     source=source,
                                     with_geometry = T,
                                     with_metadata = T)
-           print("Done")
+             print("Done")
 
            # Trajs are the same whether or not we use viirs or gfas
            suffix_trajs <- sprintf("%skm.%sh.%s.RDS",
-                             buffer_km,
-                             duration_hour,
-                             ifelse(is.null(height)|is.na(height),"pbl",paste0(height,"m")))
+                                   buffer_km,
+                                   duration_hour,
+                                   ifelse(is.null(height)|is.na(height),"pbl",paste0(height,"m")))
 
            suffix <- gsub("\\.RDS",
-                       ifelse(fire_source=="viirs",".viirs.RDS",".gfas.RDS"),
-                       suffix_trajs)
+                          ifelse(fire_source=="viirs",".viirs.RDS",".gfas.RDS"),
+                          suffix_trajs)
 
 
            prefix <- location_id
-           file.trajs <- file.path("upload", sprintf("%s.trajs.%s", prefix, suffix_trajs))
-           file.fires <- file.path("upload", sprintf("%s.fires.%s", prefix, suffix))
-           file.meas <- file.path("upload", sprintf("%s.meas.%s", prefix, suffix))
 
-           file.weather.cache <- file.path("cache", sprintf("%s.weather.%s", prefix, suffix)) # The version cached
-           file.weather <- file.path("upload", sprintf("%s.weather.%s", prefix, suffix)) # A simplified version to upload
+           file.trajs <- file.path(upload_folder, sprintf("%s.trajs.%s", prefix, suffix_trajs))
+           file.fires <- file.path(upload_folder, sprintf("%s.fires.%s", prefix, suffix))
+           file.meas <- file.path(upload_folder, sprintf("%s.meas.%s", prefix, suffix))
+           file.weather <- file.path(upload_folder, sprintf("%s.weather.%s", prefix, suffix))
+           file.weatherlite <- file.path(upload_folder, sprintf("%s.weatherlite.%s", prefix, suffix)) # A liter version to be used by dashboard
 
-           message("Deweathering: ", location_id)
-           read_weather_filename <- if(force_recompute) NULL else file.weather.cache
-           message("Weather file: ", file.weather.cache)
+           # Update weather data if required
+           if(!force_recompute_weather & file.exists(file.weather)){
 
+             weather <- readRDS(file.weather) %>%
+               update_weather(meas=m,
+                              duration_hour=duration_hour,
+                              buffer_km=buffer_km,
+                              height=height)
+             saveRDS(weather, file.weather)
+
+             # Use it
+             read_weather_filename <- file.weather
+           }else{
+             read_weather_filename <- NULL
+           }
+
+
+
+           print("Deweathering")
            m.dew <- creadeweather::deweather(meas=m[m$location_id==location_id,],
-                                             poll="pm25",
-                                             output="anomaly", #c("anomaly","anomaly_yday"),
+                                             poll=poll,
+                                             output="anomaly",
                                              add_fire = T,
                                              fire_mode = "trajectory",
                                              training_start_anomaly=date_from,
                                              training_end_anomaly="2021-12-31",
-                                             lag=3, #c(0,1,2,3),
-                                             training.fraction=0.9, #c(0.8, 0.9, 1),
+                                             lag=3,
+                                             training.fraction=0.9,
                                              save_trajs_filename=file.trajs,
-                                             save_weather_filename=file.weather.cache,
+                                             save_weather_filename=file.weather,
                                              fire_source=fire_source,
                                              fire_duration_hour = duration_hour,
                                              fire_buffer_km = buffer_km,
@@ -165,7 +179,6 @@ fill_dashboard <- function(
                                                     predefinedAcl="default")
                   })
 
-
            # Memory usage keeps growing, not sure why
            # Lines below probably don't do much
            rm(m)
@@ -181,21 +194,4 @@ fill_dashboard <- function(
       })
 }
 
-#
-# wd <- "../../development/crea/defire/"
-# fs <- list.files(file.path(wd, "cache"),"*weather*")
-#
-# lapply(fs,
-#        function(f){
-#          weather <- readRDS(file.path(wd,"cache",f))
-#          weather.lite <- weather %>%
-#            dplyr::select(location_id, meas_weather) %>%
-#            tidyr::unnest(meas_weather)
-#            # dplyr::select(location_id, date, fire_frp, fire_count, precip)
-#
-#          saveRDS(weather.lite, file.path(wd,"upload",f))
-#          googleCloudStorageR::gcs_upload(file.path(wd,"upload",f),
-#                                          bucket=trajs.bucket,
-#                                          name=paste0(trajs.folder,"/",basename(f)),
-#                                          predefinedAcl="default")
-#        })
+

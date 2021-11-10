@@ -1,3 +1,9 @@
+# Keys
+*auth.json
+
+#RSconnect
+*.dcf
+
 # History files
 .Rhistory
 .Rapp.history
