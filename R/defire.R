@@ -32,7 +32,6 @@ defire <- function(location_ids=NULL,
                    date_to=lubridate::today(),
                    upload_results=T,
 		               upload_folder=upload_folder,
-		               cache_folder="cache",
 		               duration_hour=120,
 		               buffer_km=50,
 		               height=10, #if null or NA, will be PBL average
@@ -68,7 +67,18 @@ defire <- function(location_ids=NULL,
                                     source=source,
                                     with_geometry = T,
                                     with_metadata = T)
+
+             # Filling with NAs to get fire data
+             # even when there is no measurement
+             dates <- seq.Date(as.Date(date_from), lubridate::today(), by="d")
+             m <- m %>%
+               distinct_at(setdiff(names(m), c("date","value"))) %>%
+               crossing(tibble(date=dates)) %>%
+               left_join(m)
+
              print("Done")
+
+
 
            # Trajs are the same whether or not we use viirs or gfas
            suffix_trajs <- sprintf("%skm.%sh.%s.RDS",
@@ -96,7 +106,9 @@ defire <- function(location_ids=NULL,
                update_weather(meas=m,
                               duration_hour=duration_hour,
                               buffer_km=buffer_km,
-                              height=height)
+                              height=height,
+                              file_trajs = file.trajs)
+
              saveRDS(weather, file.weather)
 
              # Use it
@@ -156,28 +168,30 @@ defire <- function(location_ids=NULL,
 
            # Export weather (lite) -----------------------------------------------------
            # Will be read online each time. Better have something as light as possible
-           weather <- readRDS(file.weather.cache)
+           weather <- readRDS(file.weather)
            weather.lite <- weather %>%
              dplyr::select(location_id, date, fire_frp, fire_count, precip)
 
-           saveRDS(weather.lite, file.weather)
+           saveRDS(weather.lite, file.weatherlite)
 
            # Upload ------------------------------------------------------------------
-           trajs.folder <- "data/trajectories"
-           trajs.bucket <- Sys.getenv("GCS_DEFAULT_BUCKET", "crea-public")
-           if(Sys.getenv('GCS_AUTH_FILE')!=""){
-             googleCloudStorageR::gcs_auth(Sys.getenv('GCS_AUTH_FILE'))
-           }
+          if(upload_results){
+            trajs.folder <- "data/trajectories"
+            trajs.bucket <- Sys.getenv("GCS_DEFAULT_BUCKET", "crea-public")
+            if(Sys.getenv('GCS_AUTH_FILE')!=""){
+              googleCloudStorageR::gcs_auth(Sys.getenv('GCS_AUTH_FILE'))
+            }
 
+            fs <- c(file.meas, file.trajs, file.weatherlite)
+            lapply(fs,
+                   function(f){
+                     googleCloudStorageR::gcs_upload(f,
+                                                     bucket=trajs.bucket,
+                                                     name=paste0(trajs.folder,"/",basename(f)),
+                                                     predefinedAcl="default")
+                   })
+          }
 
-           fs <- c(file.meas, file.trajs, file.weather)
-           lapply(fs,
-                  function(f){
-                    googleCloudStorageR::gcs_upload(f,
-                                                    bucket=trajs.bucket,
-                                                    name=paste0(trajs.folder,"/",basename(f)),
-                                                    predefinedAcl="default")
-                  })
 
            # Memory usage keeps growing, not sure why
            # Lines below probably don't do much
