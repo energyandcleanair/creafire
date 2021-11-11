@@ -38,7 +38,7 @@ tabPanel("Trajectories",
                uiOutput("selectInputTrajsPlots")
              ),
 
-             plotlyOutput("trajsPlots", height="calc(100% - 270px)") #"calc(100% - 300px)")
+             plotlyOutput("trajsPlots", height="calc(100% - 240px)") #"calc(100% - 300px)")
              # verbatimTextOutput("trajsLogs", placeholder = TRUE)
 
            )

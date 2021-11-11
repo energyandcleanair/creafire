@@ -52,13 +52,13 @@ trajs_files <- reactive({
 
   # Weather & measurements
   files.meas_weather <- files %>%
-    dplyr::filter(stringr::str_detect(name, ".(weather|meas)..*.RDS$")) %>%
-    mutate(location_id=gsub(".(weather|meas).*.RDS","",basename(name))) %>%
+    dplyr::filter(stringr::str_detect(name, ".(weatherlite|meas)..*.RDS$")) %>%
+    mutate(location_id=gsub(".(weatherlite|meas).*.RDS","",basename(name))) %>%
     mutate(details=stringr::str_match(basename(name),
-                                      sprintf("%s.(weather|meas).(.*?).RDS",location_id))[,3]) %>%
+                                      sprintf("%s.(weatherlite|meas).(.*?).RDS",location_id))[,3]) %>%
     tidyr::separate(details, c("buffer","duration","pbl","firesource")) %>%
     rename(gcs_name=name) %>%
-    mutate(meas_or_weather=ifelse(stringr::str_detect(gcs_name, ".(weather)..*.RDS$"), "weather","meas")) %>%
+    mutate(meas_or_weather=ifelse(stringr::str_detect(gcs_name, ".(weatherlite)..*.RDS$"), "weather","meas")) %>%
     select(location_id, buffer, duration, pbl, gcs_name, firesource, meas_or_weather) %>%
     tidyr::pivot_wider(names_from=meas_or_weather, values_from=gcs_name, names_prefix="gcs_name_") %>%
     filter(pbl %in% c("10m","50m"))
@@ -263,6 +263,7 @@ trajs_plot_poll <- reactive({
                         width = 2
                       )) %>%
     plotly::layout(
+      margin=list(t=200),
       showlegend = F,
       hovermode  = 'x unified',
       # title=list(
@@ -613,7 +614,8 @@ output$trajsPlots <- renderPlotly({
                      spikesnap = 'cursor',
                      # spikedash = 'solid',
                      showline=T,
-                     showgrid=T)
+                     showgrid=T),
+                   margin=list(t=60)
     )
 
 
