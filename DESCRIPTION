@@ -11,10 +11,12 @@ LazyData: true
 Imports:
     magrittr,
     tidyverse,
+    dplyr,
     rcrea,
     creadeweather,
     creatrajs,
-    leaflet.extras2
+    leaflet.extras2,
+    sf
 Remotes:
     tidyverse/lubridate,
     energyandcleanair/leaflet.extras2,
