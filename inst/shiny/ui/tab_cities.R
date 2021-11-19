@@ -19,7 +19,7 @@ tabPanel("Trajectories",
              ),
              conditionalPanel(
                condition = "input.cities_mode == 'charts'",
-               plotlyOutput("citiesPlots", height="calc(100%)"),
+               plotlyOutput("plots", height="calc(100%)"),
                style="height: 100%"
              ),
              
@@ -27,39 +27,42 @@ tabPanel("Trajectories",
            sidebarPanel(
              width = 4,
              div(
+               class="row-inline",
                uiOutput("radioMode") %>% withSpinner(color="#8cc9D0"),
+               style="height: 30px"
+             ),
+             div(
+               class="row-inline",
+               height=50,
+               uiOutput("selectInputCountry"),
+               uiOutput("selectInputCity")
              ),
              conditionalPanel(
                condition = "input.cities_mode == 'map'",
                div(
                  class="row-inline",
                  height=50,
-                 uiOutput("selectInputTrajsCountry"),
-                 uiOutput("selectInputTrajsCity")
-               ),
-               div(
-                 class="row-inline",
-                 height=50,
-                 uiOutput("selectInputTrajsDuration"),
-                 uiOutput("selectInputTrajsBuffer"),
-                 uiOutput("selectInputTrajsFireSource"),
-                 uiOutput("selectInputTrajsPoll")
+                 uiOutput("selectInputDuration"),
+                 uiOutput("selectInputBuffer"),
+                 uiOutput("selectInputFireSource"),
+                 uiOutput("selectInputPoll")
                ),
              ),
              
              div(
                class="row-inline",
                height=50,
-               uiOutput("selectInputTrajsRunning"),
+               uiOutput("selectInputRunning"),
                conditionalPanel(
                  condition = "input.cities_mode == 'map'",
-                 uiOutput("selectInputTrajsPlots")
+                 uiOutput("selectInputSidePlots")
                )
              ),
              
              conditionalPanel(
                condition = "input.cities_mode == 'map'",
-               plotlyOutput("trajsPlots", height="calc(100% - 300px)") #"calc(100% - 300px)")
+               plotlyOutput("sidePlots", height="calc(100%)"),
+               style = "height: calc(100% - 280px)"
              )
 
            )
