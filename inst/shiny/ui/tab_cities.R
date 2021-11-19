@@ -28,13 +28,14 @@ tabPanel("Trajectories",
              width = 4,
              div(
                class="row-inline",
-               uiOutput("radioMode") %>% withSpinner(color="#8cc9D0"),
-               style="height: 30px"
+               uiOutput("radioMode"),
+               style="height: 30px",
+               id="mode"
              ),
              div(
                class="row-inline",
                height=50,
-               uiOutput("selectInputCountry"),
+               uiOutput("selectInputCountry") %>% withSpinner(color="#8cc9D0"),
                uiOutput("selectInputCity")
              ),
              conditionalPanel(

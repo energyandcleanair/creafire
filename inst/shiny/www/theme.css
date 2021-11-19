@@ -1,3 +1,17 @@
+#radioMode span {
+  color: black;
+  font-weight: 600;
+}
+
+#radioMode > span {
+  color: black;
+  font-weight: 600;
+}
+
+input[type="radio"] {
+  margin: unset;
+}
+
 #aboutCrea, #notready {
     margin-right: auto;
     margin-left: auto;
