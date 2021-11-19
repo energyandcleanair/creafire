@@ -21,6 +21,9 @@ importFrom(dplyr,"rowwise")
 importFrom(dplyr,"row_number")
 importFrom(dplyr,"pull")
 
+importFrom(tidyr,"drop_na")
+
+
 
 
 

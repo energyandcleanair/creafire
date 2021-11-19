@@ -15,7 +15,11 @@ update_weather <- function(weather,
                            file_trajs){
 
   meas_missing <- meas %>%
-    left_join(weather %>% distinct(location_id, date) %>% mutate(exists=T)) %>%
+    left_join(weather %>%
+                select_at(c("location_id", "date", grep("^fire_", names(.), value=T))) %>%
+                drop_na() %>%
+                distinct(location_id, date) %>%
+                mutate(exists=T)) %>%
     filter(is.na(exists))
 
   years <- unique(lubridate::year(meas_missing$date))
