@@ -25,6 +25,7 @@ deploy_shiny <- function() {
   urls <- c(
     "tidyverse/lubridate",
     "energyandcleanair/leaflet.extras2",
+    "energyandcleanair/rcrea",
     "energyandcleanair/creafire")
 
   devtools::install_github(urls, force=T, upgrade="never", auth_token = Sys.getenv("GITHUB_PAT"))
