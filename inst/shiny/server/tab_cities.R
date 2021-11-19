@@ -469,6 +469,12 @@ trajs_plot_firecontribution <- reactive({
 
 
 # Output Elements --------------------------------------
+output$radioMode <- renderUI({
+  radioButtons("cities_mode", NULL, choices=c("Map"="map", "Charts"="charts"),
+               selected="map", inline=T)
+})
+
+
 output$selectInputTrajsRunning <- renderUI({
   req(trajs_locations()) # Not required, but added so that all ui elements appear together
   sliderInput("trajs_running_width", "Rolling average (day)", min=1, max=30, value=7, step=1, sep="")
@@ -619,6 +625,47 @@ output$trajsPlots <- renderPlotly({
     )
 
 
+})
+
+
+
+output$citiesPlots <- renderPlotly({
+  req(trajs_weather())
+  req(input$trajs_running_width)
+  req(input$trajs_firesource)
+  
+  if(input$trajs_firesource=="gfas"){
+    fire_value="pm25_emission"
+    fire_name="PM25 emission from fires"
+  }else{
+    fire_value="fire_count"
+    fire_name="Fire count"
+  }
+  
+  fires <- trajs_weather() %>%
+    dplyr::select_at(c("date", "value"=fire_value)) %>%
+    rcrea::utils.running_average(input$trajs_running_width)
+  
+  fires %>% 
+    mutate(year = year(date)) %>% 
+    group_by(year) %>% 
+    plot_ly(x = ~ lubridate::`year<-`(date, 2000)) %>% 
+    add_lines(y = ~ value, 
+              color = ~ factor(year),
+              colors="Reds"
+              
+    ) %>%
+    layout(
+      hovermode  = 'x unified',
+      xaxis=list(
+        tickformat= '%d %B',
+        title=""
+      ),
+      yaxis=list(
+        title=fire_name,
+        rangemode = 'tozero'
+      )
+    )
 })
 
 

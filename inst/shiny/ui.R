@@ -13,6 +13,7 @@ ui <- navbarPage(
     theme = "theme.css",
     id = "nav-page",
 
-    source(file.path("ui", "tab_trajectories.R"),  local = TRUE)$value,
+    source(file.path("ui", "tab_cities.R"),  local = TRUE)$value,
+    # source(file.path("ui", "tab_provinces.R"),  local = TRUE)$value,
     source(file.path("ui", "tab_about.R"),  local = TRUE)$value
 )

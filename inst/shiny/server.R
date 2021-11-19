@@ -24,6 +24,7 @@ server <- function(input, output, session) {
 
 
     # Tab 1: Trajectories              -----------------------------------------------------
-    source(file.path("server", "tab_trajectories.R"),  local = TRUE)$value
+    source(file.path("server", "tab_cities.R"),  local = TRUE)$value
+    # source(file.path("server", "tab_provinces.R"),  local = TRUE)$value
     source(file.path("server", "tab_about.R"),  local = TRUE)$value
 }
