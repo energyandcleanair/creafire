@@ -11,17 +11,17 @@ output$plots <- renderPlotly({
   # req(input$plots)
 
   plots <- list(
+    plot_poll(),
     plot_fire_count(),
-    plot_fire_frp(),
-    plot_poll()
+    plot_fire_frp()
     )
 
   plotly::subplot(plots,
                   nrows = length(plots),
                   shareX = TRUE,
                   titleX = FALSE,
-                  titleY = FALSE,
-                  shareY = T,
+                  titleY = T,
+                  # shareY = T,
                   margin = 0.05
   ) %>%
     plotly::layout(hovermode='x',
@@ -66,9 +66,10 @@ plot_fire_count <- reactive({
     add_lines(y = ~ value, 
               color = ~ factor(year),
               colors="Reds"
-              
+              # legendgroup="group1"
     ) %>%
     layout(
+      
       hovermode  = 'x unified',
       xaxis=list(
         tickformat= '%d %B',
@@ -108,6 +109,7 @@ plot_fire_frp <- reactive({
     add_lines(y = ~ value, 
               color = ~ factor(year),
               colors="Reds"
+              # legendgroup="group1"
               
     ) %>%
     layout(
@@ -154,7 +156,9 @@ plot_poll <- reactive({
             showlegend = F) %>% 
     add_lines(y = ~ value, 
               color = ~ factor(year),
-              colors="Reds")  %>%
+              colors="Reds"
+              # legendgroup="group1"
+              )  %>%
     layout(
       hovermode  = 'x unified',
       xaxis=list(

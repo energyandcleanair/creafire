@@ -118,7 +118,6 @@ defire <- function(location_ids=NULL,
            }
 
 
-
            print("Deweathering")
            m.dew <- creadeweather::deweather(meas=m[m$location_id==location_id,],
                                              poll=poll,
