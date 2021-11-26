@@ -1,0 +1,8 @@
+[
+  {
+    "command": "run_script",
+    "rscript": {
+      "url": "https://github.com/energyandcleanair/defire/raw/main/scripts/refresh.R"
+    }
+  }
+]
