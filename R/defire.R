@@ -31,11 +31,12 @@ defire <- function(location_ids=NULL,
                    poll=c("pm25"),
                    date_to=lubridate::today(),
                    upload_results=T,
-		               upload_folder=upload_folder,
+		               upload_folder="upload",
 		               duration_hour=120,
 		               buffer_km=50,
 		               height=10, #if null or NA, will be PBL average
 		               force_recompute_weather=F,
+		               download_from_gcs=F,
 		               fire_source="viirs"
 ){
 
@@ -79,7 +80,6 @@ defire <- function(location_ids=NULL,
              print("Done")
 
 
-
            # Trajs are the same whether or not we use viirs or gfas
            suffix_trajs <- sprintf("%skm.%sh.%s.RDS",
                                    buffer_km,
@@ -98,6 +98,12 @@ defire <- function(location_ids=NULL,
            file.meas <- file.path(upload_folder, sprintf("%s.meas.%s", prefix, suffix))
            file.weather <- file.path(upload_folder, sprintf("%s.weather.%s", prefix, suffix))
            file.weatherlite <- file.path(upload_folder, sprintf("%s.weatherlite.%s", prefix, suffix)) # A liter version to be used by dashboard
+           
+           # Download existing weather data if required
+           if(!force_recompute_weather & download_from_gcs){
+               fs <- basename(c(file.meas, file.trajs, file.weather))
+               gcs.download(fs, upload_folder)
+           }
 
            # Update weather data if required
            if(!force_recompute_weather & file.exists(file.weather)){
@@ -175,20 +181,8 @@ defire <- function(location_ids=NULL,
 
            # Upload ------------------------------------------------------------------
           if(upload_results){
-            trajs.folder <- "data/trajectories"
-            trajs.bucket <- Sys.getenv("GCS_DEFAULT_BUCKET", "crea-public")
-            if(Sys.getenv('GCS_AUTH_FILE')!=""){
-              googleCloudStorageR::gcs_auth(Sys.getenv('GCS_AUTH_FILE'))
-            }
-
             fs <- c(file.meas, file.trajs, file.weatherlite)
-            lapply(fs,
-                   function(f){
-                     googleCloudStorageR::gcs_upload(f,
-                                                     bucket=trajs.bucket,
-                                                     name=paste0(trajs.folder,"/",basename(f)),
-                                                     predefinedAcl="default")
-                   })
+            gcs.upload(fs)
           }
 
 

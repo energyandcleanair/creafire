@@ -3,6 +3,11 @@
     "command": "run_script",
     "rscript": {
       "url": "https://github.com/energyandcleanair/defire/raw/main/scripts/refresh.R"
-    }
+    },
+    "environment_variables":[
+      "ENTSO_TOKEN",
+      "EIA_KEY",
+      "BMRS_KEY"
+     ]
   }
 ]
