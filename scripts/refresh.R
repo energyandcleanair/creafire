@@ -4,6 +4,7 @@ library(remotes)
 
 remotes::install_github('energyandcleanair/creadeweather', upgrade=F)
 remotes::install_github('energyandcleanair/creafire', upgrade=F)
+remotes::install_github('energyandcleanair/rcrea', upgrade=F)
 
 library(creadeweather)
 library(tidyverse)
