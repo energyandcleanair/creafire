@@ -3,6 +3,8 @@ library(tidyverse)
 library(remotes)
 
 remotes::install_github('energyandcleanair/creadeweather', upgrade=F)
+remotes::install_github('hubert-thieriot/splitr', upgrade=F)
+remotes::install_github('energyandcleanair/creatrajs', upgrade=F)
 remotes::install_github('energyandcleanair/creafire', upgrade=F)
 remotes::install_github('energyandcleanair/rcrea', upgrade=F)
 
