@@ -195,7 +195,9 @@ defire <- function(location_ids=NULL,
            gc()
 
          }, error=function(e){
-           warning("Failed for location: ", location_id, "\n", e)
+           msg <- paste0("Failed for location: ", location_id, "\n", e)
+           print(msg)
+           warning(msg)
          })
 
       })
