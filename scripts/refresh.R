@@ -13,7 +13,7 @@ library(tidyverse)
 library(creafire)
 
 
-configs <- tibble(
+config_india <- tibble(
   city=c("Chandigarh","Delhi", "Varanasi", "Kolkata", "Gurugram", "Lucknow"),
   source='cpcb',
   poll=list(c("pm25","pm10")),
@@ -24,6 +24,38 @@ configs <- tibble(
   height=10,
   date_from="2016-01-01",
   fire_source="viirs")
+
+config_pakistan <- tibble(
+  city=c("Lahore","Islamabad"),
+  source='openaq_government',
+  poll=list(c("pm25")),
+  level='city',
+  process_id='city_day_mad',
+  duration_hour=120,
+  buffer_km=50,
+  height=10,
+  date_from="2016-01-01",
+  fire_source="viirs")
+
+
+config_thailand <- tibble(
+  city=c("Bangkok","Chiang Mai"),
+  source='air4thai',
+  poll=list(c("pm25")),
+  level='city',
+  process_id='city_day_mad',
+  duration_hour=120,
+  buffer_km=50,
+  height=10,
+  date_from="2016-01-01",
+  fire_source="viirs")
+
+configs <- bind_rows(
+  config_india,
+  config_pakistan,
+  config_thailand
+)
+
 
 print(configs)
 lapply(seq(nrow(configs)),
