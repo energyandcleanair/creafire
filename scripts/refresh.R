@@ -74,3 +74,9 @@ lapply(seq(nrow(configs)),
                 upload_folder = "upload",
                 force_recompute_weather=F)
        })
+
+
+# Also deweather data for darhboard
+deweather(city=unique(configs$city),
+          source=unique(configs$source),
+          poll=unique(unlist(configs$poll)))
