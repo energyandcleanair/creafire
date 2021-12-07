@@ -80,3 +80,14 @@ lapply(seq(nrow(configs)),
 deweather(city=unique(configs$city),
           source=unique(configs$source),
           poll=unique(unlist(configs$poll)))
+
+
+# And calculate regional fires!
+# g1 <- creahelpers::get_adm(level=1, iso2s=c("IN","PK","TH","MY"))
+# g2 <- creahelpers::get_adm(level=2, iso2s=c("IN","PK","TH","MY"))
+# 
+# g <- bind_rows(g1, g2)
+# readRenviron(".Renviron")
+# 
+# f <- creatrajs::fire.aggregate("2021-12-01", "2021-12-10", geometries = g)
+
