@@ -287,7 +287,7 @@ output$selectInputPoll <- renderUI({
 
 
 
-createInputTrajsDate <- function(value=NULL){
+createInputDate <- function(value=NULL){
   dates <- trajs_dates()
   if(is.null(value)){
     value <- max(dates)
@@ -308,13 +308,9 @@ createInputTrajsDate <- function(value=NULL){
 
 output$selectInputDates <- renderUI({
   req(trajs_dates())
-  createInputTrajsDate()
+  createInputDate()
 })
 
-# output$trajsLogs <- renderText({
-#     req(trajs_logs)
-#     trajs_logs[["log"]]
-#     })
 
 output$trajsInfos <- renderUI({
   req(location_id())
@@ -337,8 +333,6 @@ output$trajsInfos <- renderUI({
 output$trajsLogs <- renderText({
   trajs_logs$msg
 })
-
-
 
 
 
@@ -514,7 +508,7 @@ observe({
   if(is.null(d)){return(NULL)}
   name <- intersect(c("x","x1"), names(d))
   clickedDate(d[[name]])
-  output$selectInputDates = renderUI(createInputTrajsDate(value=d[[name]]))
+  output$selectInputDates = renderUI(createInputDate(value=d[[name]]))
 
 })
 
