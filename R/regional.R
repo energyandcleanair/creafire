@@ -29,12 +29,18 @@ regional.update_year <- function(iso2s, year){
     
     f <- regional.download(iso2, year, folder)  
     if(file.exists(f)){
-      fires <- readRDS(f)
+      fires_cache <- readRDS(f)
       date_from <- max(as.Date(fires$acq_date)) - lubridate::days(2) # Take a buffer
     }else{
-      fires <- NULL
+      fires_cache <- tibble(acq_date=c())
     }
     
+    fires_new <- regional.collect_fires(iso2, date_from, date_to)
+    
+    fires <- bind_rows(
+      fires_cache %>% filter(acq_date < min(fires_new$acq_date)),
+      fires_new
+    ) %>%
     
   }
   
