@@ -13,7 +13,7 @@ tabPanel("Trajectories",
                              htmlOutput("trajsInfos", height="120px")
                ),
                absolutePanel(bottom = 10, right = "10%", width="80%",
-                             uiOutput("selectInputTrajsDates", height = "30px")
+                             uiOutput("selectInputDates", height = "30px")
                ),
                style="height: 100%"
              ),

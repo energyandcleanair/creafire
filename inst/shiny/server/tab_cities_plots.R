@@ -5,6 +5,7 @@
 output$plots <- renderPlotly({
 
   req(plot_fire_count())
+  req(plot_fire_contribution())
   req(plot_fire_frp())
   req(plot_poll())
   
@@ -12,6 +13,7 @@ output$plots <- renderPlotly({
 
   plots <- list(
     plot_poll(),
+    plot_fire_contribution(),
     plot_fire_count(),
     plot_fire_frp()
     )
@@ -125,6 +127,55 @@ plot_fire_frp <- reactive({
     )
 })
 
+
+
+
+plot_fire_contribution <- reactive({
+  
+  req(trajs_meas_all())
+  poll <- input$poll
+  req(input$running_width, poll)
+  
+  m <- trajs_meas_all() %>%
+    filter(poll==!!poll)
+  
+  if(nrow(m)==0){
+    return(NULL)
+  }
+  
+  poll_name <- rcrea::poll_str(poll)
+  unit <- unique(m$unit)
+  hovertemplate <- paste('%{y:.0f}',unit)
+  
+  m <- m %>%
+    mutate(value=predicted-predicted_nofire) %>%
+    select(date, value) %>%
+    rcrea::utils.running_average(input$running_width) %>%
+    mutate(date0000=lubridate::`year<-`(date, 2000))
+  
+  m %>% 
+    mutate(year = year(date)) %>% 
+    group_by(year) %>% 
+    plot_ly(x = ~ lubridate::`year<-`(date, 2000),
+            showlegend = F) %>% 
+    add_lines(y = ~ value, 
+              color = ~ factor(year),
+              colors="Reds"
+              # legendgroup="group1"
+    )  %>%
+    layout(
+      hovermode  = 'x unified',
+      xaxis=list(
+        tickformat= '%d %B',
+        title=""
+      ),
+      yaxis=list(
+        title=sprintf("Fire contribution to %s (%s)", poll_name, unit),
+        rangemode = 'tozero'
+      )
+    )
+  
+})
 
 
 plot_poll <- reactive({
