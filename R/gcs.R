@@ -1,25 +1,25 @@
 gcs.auth <- function(force_service_account=F){
-  
+
   # To avoid interactive prompt
   # which blocks execution on ComputeEngine and AppEngine
   options(httr_oauth_cache=T)
-  
+
   if(force_service_account){
     googleAuthR::gar_deauth()
   }
-  
+
   if(!googleAuthR::gar_has_token()){
     suppressWarnings(readRenviron(".env"))
     suppressWarnings(readRenviron(".Renviron"))
-    
+
     # First try to see if we're on a Compute Engine instance
     googleAuthR::gar_gce_auth()
-    
+
     if (!googleAuthR::gar_has_token()){
       # Use USER specific credentials if set
       if(Sys.getenv("GOOGLE_APPLICATION_CREDENTIALS")!="" & !force_service_account){
         message("Using local user rights for GCS: ", Sys.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
-        googleCloudStorageR::gcs_auth(json_file=Sys.getenv("GOOGLE_APPLICATION_CREDENTIALS"))  
+        googleCloudStorageR::gcs_auth(json_file=Sys.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
       }
     }
   }
@@ -31,7 +31,7 @@ gcs.upload <- function(fs){
   if(Sys.getenv('GCS_AUTH_FILE')!=""){
     googleCloudStorageR::gcs_auth(Sys.getenv('GCS_AUTH_FILE'))
   }
-  
+
   lapply(fs,
          function(f){
            googleCloudStorageR::gcs_upload(f,
@@ -43,11 +43,11 @@ gcs.upload <- function(fs){
 
 
 gcs.download <- function(fs, dest_folder, only_if_modified_since=T, overwrite=T){
-  
+
   trajs.folder <- "data/trajectories"
   trajs.bucket <- Sys.getenv("GCS_DEFAULT_BUCKET", "crea-public")
-  
-  
+
+
   lapply(fs, function(file){
     tryCatch({
       url <- sprintf("https://storage.googleapis.com/%s/%s/%s", trajs.bucket, trajs.folder, file)
@@ -56,7 +56,7 @@ gcs.download <- function(fs, dest_folder, only_if_modified_since=T, overwrite=T)
       if(only_if_modified_since && file.exists(dest_path)){
         config <- httr::add_headers(`If-Modified-Since`=httr::http_date(file.info(dest_path)$mtime))
       }
-      
+
       r <- httr::GET(url=url, config=config)
       if(r$status_code==304){
         message("Cache file already up to date. No need to update ", source_path)
@@ -74,7 +74,7 @@ gcs.download <- function(fs, dest_folder, only_if_modified_since=T, overwrite=T)
 
 #' Uploading regional fire data
 #'
-#' @param fs 
+#' @param fs
 #'
 #' @return
 #' @export
@@ -86,7 +86,7 @@ gcs.upload_regional_fire <- function(fs){
   if(Sys.getenv('GCS_AUTH_FILE')!=""){
     googleCloudStorageR::gcs_auth(Sys.getenv('GCS_AUTH_FILE'))
   }
-  
+
   lapply(fs,
          function(f){
            googleCloudStorageR::gcs_upload(f,
@@ -98,21 +98,20 @@ gcs.upload_regional_fire <- function(fs){
 
 #' Downloading regional fire data
 #'
-#' @param fs 
-#' @param dest_folder 
-#' @param only_if_modified_since 
-#' @param overwrite 
+#' @param fs
+#' @param dest_folder
+#' @param only_if_modified_since
+#' @param overwrite
 #'
 #' @return
 #' @export
 #'
 #' @examples
 gcs.download_regional_fire <- function(fs, dest_folder, only_if_modified_since=T, overwrite=T){
-  
+
   trajs.folder <- "data/fire"
   trajs.bucket <- Sys.getenv("GCS_DEFAULT_BUCKET", "crea-public")
-  
-  
+
   lapply(fs, function(file){
     tryCatch({
       url <- sprintf("https://storage.googleapis.com/%s/%s/%s", trajs.bucket, trajs.folder, file)
@@ -121,7 +120,7 @@ gcs.download_regional_fire <- function(fs, dest_folder, only_if_modified_since=T
       if(only_if_modified_since && file.exists(dest_path)){
         config <- httr::add_headers(`If-Modified-Since`=httr::http_date(file.info(dest_path)$mtime))
       }
-      
+
       r <- httr::GET(url=url, config=config)
       if(r$status_code==304){
         message("Cache file already up to date. No need to update ", source_path)
