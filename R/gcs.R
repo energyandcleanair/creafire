@@ -2,7 +2,7 @@ gcs.auth <- function(force_service_account=F){
 
   # To avoid interactive prompt
   # which blocks execution on ComputeEngine and AppEngine
-  options(httr_oauth_cache=T)
+  options(httr_oauth_cache=F)
 
   if(force_service_account){
     googleAuthR::gar_deauth()
@@ -14,6 +14,7 @@ gcs.auth <- function(force_service_account=F){
 
     # First try to see if we're on a Compute Engine instance
     googleAuthR::gar_gce_auth()
+
 
     if (!googleAuthR::gar_has_token()){
       # Use USER specific credentials if set

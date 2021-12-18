@@ -8,7 +8,7 @@ remotes::install_github('energyandcleanair/creatrajs', upgrade=F)
 remotes::install_github('energyandcleanair/creafire', upgrade=F)
 remotes::install_github('energyandcleanair/rcrea', upgrade=F)
 
-options(httr_oauth_cache=T)
+# options(httr_oauth_cache=T)
 
 library(creadeweather)
 library(tidyverse)
@@ -87,14 +87,14 @@ deweather(city=unique(configs$city),
 # And calculate regional fires!
 # g1 <- creahelpers::get_adm(level=1, iso2s=c("IN","PK","TH","MY"))
 # g2 <- creahelpers::get_adm(level=2, iso2s=c("IN","PK","TH","MY"))
-# 
+#
 # g <- bind_rows(sf::st_as_sf(g1) %>% mutate(level=1),
 #                sf::st_as_sf(g2) %>% mutate(level=2))
-# 
+#
 # readRenviron(".Renviron")
-# 
+#
 # f <- creatrajs::fire.aggregate("2021-12-01", "2021-12-10", geometries = g)
-# 
+#
 # f %>%
 #   select_at(grep("date|GID_.*|NAME_.*",names(.)))
 
