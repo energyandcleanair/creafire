@@ -5,7 +5,8 @@
       "url": "https://github.com/energyandcleanair/defire/raw/main/scripts/refresh.R"
     },
     "environment_variables":[
-      "EOSDIS_TOKEN"
+      "EOSDIS_TOKEN",
+      "CREA_DB_URL"
      ]
   }
 ]

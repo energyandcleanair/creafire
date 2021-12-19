@@ -2,7 +2,7 @@ gcs.auth <- function(force_service_account=F){
 
   # To avoid interactive prompt
   # which blocks execution on ComputeEngine and AppEngine
-  options(httr_oauth_cache=F)
+  options(httr_oauth_cache=T)
 
   if(force_service_account){
     googleAuthR::gar_deauth()
