@@ -15,7 +15,6 @@ gcs.auth <- function(force_service_account=F){
     # First try to see if we're on a Compute Engine instance
     googleAuthR::gar_gce_auth()
 
-
     if (!googleAuthR::gar_has_token()){
       # Use USER specific credentials if set
       if(Sys.getenv("GOOGLE_APPLICATION_CREDENTIALS")!="" & !force_service_account){
@@ -23,15 +22,18 @@ gcs.auth <- function(force_service_account=F){
         googleCloudStorageR::gcs_auth(json_file=Sys.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
       }
     }
+
+    # Used by Shiny Application
+    if(Sys.getenv('GCS_AUTH_FILE')!=""){
+      googleCloudStorageR::gcs_auth(Sys.getenv('GCS_AUTH_FILE'))
+    }
   }
 }
 
 gcs.upload <- function(fs){
   trajs.folder <- "data/trajectories"
   trajs.bucket <- Sys.getenv("GCS_DEFAULT_BUCKET", "crea-public")
-  if(Sys.getenv('GCS_AUTH_FILE')!=""){
-    googleCloudStorageR::gcs_auth(Sys.getenv('GCS_AUTH_FILE'))
-  }
+
 
   lapply(fs,
          function(f){
@@ -84,9 +86,7 @@ gcs.download <- function(fs, dest_folder, only_if_modified_since=T, overwrite=T)
 gcs.upload_regional_fire <- function(fs){
   trajs.folder <- "data/fire"
   trajs.bucket <- Sys.getenv("GCS_DEFAULT_BUCKET", "crea-public")
-  if(Sys.getenv('GCS_AUTH_FILE')!=""){
-    googleCloudStorageR::gcs_auth(Sys.getenv('GCS_AUTH_FILE'))
-  }
+  gcs.auth()
 
   lapply(fs,
          function(f){
