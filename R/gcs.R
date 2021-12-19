@@ -34,6 +34,7 @@ gcs.upload <- function(fs){
   trajs.folder <- "data/trajectories"
   trajs.bucket <- Sys.getenv("GCS_DEFAULT_BUCKET", "crea-public")
 
+  gcs.auth()
 
   lapply(fs,
          function(f){
