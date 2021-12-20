@@ -37,7 +37,8 @@ defire <- function(location_ids=NULL,
 		               height=10, #if null or NA, will be PBL average
 		               force_recompute_weather=F,
 		               download_from_gcs=F,
-		               fire_source="viirs"
+		               fire_source="viirs",
+		               parallel=T
 ){
 
   if(is.null(location_ids)){
@@ -98,7 +99,7 @@ defire <- function(location_ids=NULL,
            file.meas <- file.path(upload_folder, sprintf("%s.meas.%s", prefix, suffix))
            file.weather <- file.path(upload_folder, sprintf("%s.weather.%s", prefix, suffix))
            file.weatherlite <- file.path(upload_folder, sprintf("%s.weatherlite.%s", prefix, suffix)) # A liter version to be used by dashboard
-           
+
            # Download existing weather data if required
            if(!force_recompute_weather & download_from_gcs){
                fs <- basename(c(file.meas, file.trajs, file.weather))
@@ -140,10 +141,12 @@ defire <- function(location_ids=NULL,
                                              fire_duration_hour = duration_hour,
                                              fire_buffer_km = buffer_km,
                                              trajs_height=height,
+                                             trajs_parallel=parallel,
                                              read_weather_filename=read_weather_filename,
                                              keep_model = T,
                                              link=c("linear"),
-                                             upload_results = F
+                                             upload_results = F,
+
            )
 
 
