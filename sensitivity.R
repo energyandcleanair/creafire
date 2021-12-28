@@ -3,21 +3,23 @@ library(tidyverse)
 library(creadeweather)
 library(rcrea)
 
-
+setwd("~/studies/202110_india_burning/")
 lag <- seq(1,3)
 training_fraction <- 0.9
-location_id <- rcrea::cities(name=c("Chiang Mai"))$id #, "Chandigarh", "Varanasi", "Kolkata", "Gurugram", "Lucknow"))$id
-training_start <- c("2015-01-01") #,"2017-01-01")
-cv_folds <- c(3,6,9)
+location_id <- rcrea::cities(name="Delhi")$id # name=c("Chandigarh", "Varanasi", "Kolkata", "Gurugram", "Lucknow"))$id
+training_start <- c("2015-01-01")
+cv_folds <- c(9)
 duration_hour <- c(24, 72, 120)
 buffer_km <- c(10, 50)
 split_days <- c(T,F)
 fire_source <- c("viirs") #, "gfas")
+source <- c("cpcb","airnow","air4thai","doemy")
 
-configs <- crossing(lag, training_fraction, location_id, training_start, duration_hour, buffer_km, split_days, fire_source,
+configs <- crossing(lag, training_fraction, location_id, training_start, source=list(source),
+                    duration_hour, buffer_km, split_days, fire_source,
                     cv_folds)
 
-deweather <- function(lag, training_fraction, location_id, training_start,
+deweather <- function(lag, training_fraction, location_id, training_start, source,
                       duration_hour, buffer_km, split_days, fire_source, cv_folds,
                       force=F){
   
@@ -45,8 +47,8 @@ deweather <- function(lag, training_fraction, location_id, training_start,
   }
   
   mdew <- creadeweather::deweather(location_id=location_id,
-                                   poll=c("pm25"),
-                                   source=c("cpcb","airnow","air4thai"),
+                                   poll=c("pm25","pm10"),
+                                   source=source,
                                    output=c("anomaly"),
                                    read_weather_filename=read_weather_filename,
                                    save_weather_filename=save_weather_filename,
@@ -77,7 +79,7 @@ deweather <- function(lag, training_fraction, location_id, training_start,
 
 
 results <- mapply(deweather, configs$lag, configs$training_fraction,
-                  configs$location_id, configs$training_start,
+                  configs$location_id, configs$training_start, configs$source,
                   configs$duration_hour, configs$buffer_km,
                   configs$split_days, configs$fire_source,
                   configs$cv_folds,
@@ -87,6 +89,8 @@ results <- mapply(deweather, configs$lag, configs$training_fraction,
 
 saveRDS(results, "sensitivity/results.RDS")
 results <- readRDS("sensitivity/results.RDS")
+fs_delhi <-list.files("sensitivity", pattern="mdew_delhi", full.names = T)
+results <- lapply(fs_delhi, readRDS) %>% do.call(bind_rows, .)
 
 # Diagnostic --------------------------------------------------------------
 results %>%
@@ -130,11 +134,14 @@ results %>%
 
 # Timeseries --------------------------------------------------------------
 results %>%
-  filter(output=="anomaly") %>%
+  filter(output=="anomaly",
+         training_start=="2015-01-01",
+         poll=="pm25") %>%
   tidyr::unnest(normalised) %>%
   select(training_fraction,
          lag,
          training_start,
+         cv_folds,
          poll,
          fire_source,
          split_days,
@@ -146,26 +153,27 @@ results %>%
   ) %>%
   rcrea::utils.running_average(7) %>%
   ggplot() +
-  geom_line(aes(x=date, y=value, col=poll)) +
-  facet_grid(lag + fire_source~ split_days +  duration_hour + buffer_km)
+  geom_line(aes(x=date, y=value, col=factor(cv_folds))) +
+  facet_grid(lag + fire_source ~ split_days +  duration_hour + buffer_km)
 
 
-# 
+
 # # Update file names
 # fs <- list.files("sensitivity", pattern=".*lag[0-9]", full.names = T)
 # fs_new <- paste0(gsub(".RDS","", fs), "_cv3.RDS")
 # file.rename(fs, fs_new)
-# 
-# # Add cv_folds
-# fs <- list.files("sensitivity", pattern="cv3.RDS", full.names = T)
+
+# # Rename
+# fs <- list.files("sensitivity", pattern="_cv6_cv3.RDS", full.names = T)
 # lapply(fs, function(f){
-#   readRDS(f) %>% mutate(cv_folds=3) %>% saveRDS(f)
+#   f_new <- gsub("cv6_cv3","cv6", f)
+#   file.rename(f, f_new)
 # })
-# 
+#
 # fs <- list.files("sensitivity", pattern="cv6.RDS", full.names = T)
 # lapply(fs, function(f){
 #   readRDS(f) %>% mutate(cv_folds=6) %>% saveRDS(f)
 # })
-# 
+#
 # fs_delhi <-list.files("sensitivity", pattern="mdew_delhi", full.names = T)
 # results <- lapply(fs_delhi, readRDS) %>% do.call(bind_rows, .)

@@ -52,10 +52,24 @@ config_thailand <- tibble(
   date_from="2016-01-01",
   fire_source="viirs")
 
+config_malaysia <- tibble(
+  city=c("Kuala Lumpur"),
+  source='doemy',
+  poll=list(c("pm25")),
+  level='city',
+  process_id='city_day_mad',
+  duration_hour=120,
+  buffer_km=50,
+  height=10,
+  date_from="2016-01-01",
+  fire_source="viirs")
+
+
 configs <- bind_rows(
   config_india,
   config_pakistan,
-  config_thailand
+  config_thailand,
+  config_malaysia
 )
 
 
