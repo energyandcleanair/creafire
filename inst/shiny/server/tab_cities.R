@@ -424,12 +424,15 @@ observe({
 
   req(trajs_date())
 
-  wms_url <- sprintf("https://firms.modaps.eosdis.nasa.gov/wms/key/%s/",Sys.getenv("FIRMS_KEY"))
-  wms_layer <- "fires_viirs_snpp"
+  wms_layer <- "fires_viirs_snpp_72"
+  
+  # See https://firms.modaps.eosdis.nasa.gov/mapserver/wms-info/#firms-wms
+  wms_url <- sprintf("https://firms.modaps.eosdis.nasa.gov/mapserver/wms/fires/%s/%s/",
+                     Sys.getenv("FIRMS_KEY"),
+                     wms_layer)
+  
   leaflet_layer_id <- "firms_wms"
   date_str <- strftime(as.Date(trajs_date()),"%Y-%m-%d")
-
-  #https://firms.modaps.eosdis.nasa.gov/wms/key/YourMapKey/?REQUEST=GetMap&layers=fires_viirs,fires_modis&TIME=2020-01-01/2020-01-10&WIDTH=1024&HEIGHT=512&colors=240+40+40,250+200+50&size=2,2&BBOX=-180,-90,180,90
 
 
   leafletProxy("maptrajs") %>%
