@@ -361,8 +361,10 @@ add_sentinel_layers <- function(map, date){
 }
 
 output$maptrajs <- renderLeaflet({
-  map <- leaflet(options = leafletOptions(preferCanvas = TRUE,
-                                   zoomControl = FALSE)) %>%
+  map <- leaflet(options = leafletOptions(
+    crs = leafletCRS(crsClass = "L.CRS.EPSG3857"),
+    preferCanvas = TRUE,
+    zoomControl = FALSE)) %>%
     setView(80,30,6) %>%
     # addProviderTiles(providers$Stamen.TonerLite,
     #                  options = providerTileOptions(noWrap = TRUE)
@@ -424,12 +426,11 @@ observe({
 
   req(trajs_date())
 
-  wms_layer <- "fires_viirs_snpp_72"
+  wms_layer <- "fires_viirs_snpp"
   
   # See https://firms.modaps.eosdis.nasa.gov/mapserver/wms-info/#firms-wms
-  wms_url <- sprintf("https://firms.modaps.eosdis.nasa.gov/mapserver/wms/fires/%s/%s/",
-                     Sys.getenv("FIRMS_KEY"),
-                     wms_layer)
+  wms_url <- sprintf("https://firms.modaps.eosdis.nasa.gov/mapserver/wms/fires/%s/",
+                     Sys.getenv("FIRMS_KEY"))
   
   leaflet_layer_id <- "firms_wms"
   date_str <- strftime(as.Date(trajs_date()),"%Y-%m-%d")
@@ -448,11 +449,11 @@ observe({
         colors = "255+12+25",
         TIME = date_str,
         size=5,
-        zIndex=1000
+        zIndex=1000,
+        version='1.1.1'
       )) %>%
       leaflet.extras2::setDate(layers=stack(trajs_gibs_layers)$values,
                                dates=as.Date(trajs_date())) %>%
-
 
     # removeTiles(stack(trajs_gibs_layers)$values) %>%
     removeTiles(names(sentinel_layers)) %>%
