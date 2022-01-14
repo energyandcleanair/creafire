@@ -38,10 +38,17 @@ gcs.upload <- function(fs){
 
   lapply(fs,
          function(f){
+           # Faced HTTP/2 stream 0 was not closed cleanly: PROTOCOL_ERROR
+           # Fixing attempt: force using HTTP 1.1 (the number 2 is an enum value)
+           handle <- curl::new_handle(verbose = TRUE)
+           curl::handle_setopt(handle, http_version = 2)
+           httr::set_config(httr::config(http_version = 0))
+
            googleCloudStorageR::gcs_upload(f,
                                            bucket=trajs.bucket,
                                            name=paste0(trajs.folder,"/",basename(f)),
-                                           predefinedAcl="default")
+                                           predefinedAcl="default",
+                                           upload_type="simple")
          })
 }
 
