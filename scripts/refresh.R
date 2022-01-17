@@ -16,7 +16,7 @@ remotes::install_github('energyandcleanair/rcrea', upgrade=F)
 # Fixing attempt: force using HTTP 1.1 (the number 2 is an enum value)
 handle <- curl::new_handle(verbose = TRUE)
 curl::handle_setopt(handle, http_version = 2)
-httr::set_config(httr::config(http_version = 0))
+httr::set_config(httr::config(http_version = 2))
 
 library(creadeweather)
 library(tidyverse)
