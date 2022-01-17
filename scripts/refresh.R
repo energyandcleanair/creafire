@@ -61,11 +61,10 @@ config_thailand <- tibble(
   fire_source="viirs")
 
 configs <- bind_rows(
-  config_india,
+  config_thailand,
   config_pakistan,
-  config_thailand
+  config_india
 )
-
 
 print(configs)
 lapply(seq(nrow(configs)),
