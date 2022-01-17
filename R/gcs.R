@@ -31,6 +31,10 @@ gcs.auth <- function(force_service_account=F){
 }
 
 gcs.upload <- function(fs){
+  handle <- curl::new_handle(verbose = TRUE)
+  curl::handle_setopt(handle, http_version = 2)
+  httr::set_config(httr::config(http_version = 0))
+  
   trajs.folder <- "data/trajectories"
   trajs.bucket <- Sys.getenv("GCS_DEFAULT_BUCKET", "crea-public")
 
