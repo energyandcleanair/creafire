@@ -41,7 +41,7 @@ config_pakistan <- tibble(
 
 
 config_thailand <- tibble(
-  city=c("Bangkok","Chiang Mai"),
+  city=c("Bangkok","Chiang Mai","Chiang Rai"),
   source='air4thai',
   poll=list(c("pm25")),
   level='city',

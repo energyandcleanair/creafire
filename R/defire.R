@@ -28,8 +28,9 @@ defire <- function(location_ids=NULL,
                    country=NULL,
 		               process_id="city_day_mad",
                    date_from="2016-01-01",
-                   poll=c("pm25"),
-                   date_to=lubridate::today(),
+		               date_to=lubridate::today(),
+		               training_end_anomaly=lubridate::today(),
+		               poll=c("pm25"),
                    upload_results=T,
 		               upload_folder="upload",
 		               duration_hour=120,
@@ -66,13 +67,14 @@ defire <- function(location_ids=NULL,
                                     poll=poll,
                                     source_city=source_city,
                                     date_from=date_from,
+                                    date_to=date_to,
                                     source=source,
                                     with_geometry = T,
                                     with_metadata = T)
 
              # Filling with NAs to get fire data
              # even when there is no measurement
-             dates <- seq.Date(as.Date(date_from), lubridate::today(), by="d")
+             dates <- seq.Date(as.Date(date_from), as.Date(date_to), by="d")
              m <- m %>%
                distinct_at(setdiff(names(m), c("date","value"))) %>%
                crossing(tibble(date=dates)) %>%
@@ -108,18 +110,21 @@ defire <- function(location_ids=NULL,
 
            # Update weather data if required
            if(!force_recompute_weather & file.exists(file.weather)){
-
-             weather <- readRDS(file.weather) %>%
-               update_weather(meas=m,
-                              duration_hour=duration_hour,
-                              buffer_km=buffer_km,
-                              height=height,
-                              file_trajs = file.trajs)
-
-             saveRDS(weather, file.weather)
-
-             # Use it
-             read_weather_filename <- file.weather
+             read_weather_filename <- tryCatch({
+               readRDS(file.weather) %>%
+                 update_weather(meas=m,
+                                duration_hour=duration_hour,
+                                buffer_km=buffer_km,
+                                height=height,
+                                file_trajs = file.trajs)
+               
+               saveRDS(weather, file.weather)
+               # Use it
+               file.weather
+             }, error=function(e){
+               print(sprintf("Failed to read or update: %s", file.weather))
+               return(NULL)
+             })
            }else{
              read_weather_filename <- NULL
            }
@@ -132,7 +137,7 @@ defire <- function(location_ids=NULL,
                                              add_fire = T,
                                              fire_mode = "trajectory",
                                              training_start_anomaly=date_from,
-                                             training_end_anomaly="2021-12-31",
+                                             training_end_anomaly=training_end_anomaly,
                                              lag=3,
                                              training.fraction=0.9,
                                              cv_folds=6,

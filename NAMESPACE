@@ -6,10 +6,13 @@ importFrom(magrittr,"%<>%")
 importFrom(dplyr,"distinct")
 importFrom(dplyr,"bind_rows")
 importFrom(dplyr,"collect")
+importFrom(dplyr,"distinct")
+importFrom(dplyr,"distinct_at")
 importFrom(dplyr,"filter")
 importFrom(dplyr,"filter_at")
 importFrom(dplyr,"mutate")
 importFrom(dplyr,"select")
+importFrom(dplyr,"select_at")
 importFrom(dplyr,"left_join")
 importFrom(dplyr,"group_by")
 importFrom(dplyr,"group_by_at")
@@ -21,7 +24,10 @@ importFrom(dplyr,"rowwise")
 importFrom(dplyr,"row_number")
 importFrom(dplyr,"pull")
 
+importFrom(tibble,"tibble")
+
 importFrom(tidyr,"drop_na")
+importFrom(tidyr,"crossing")
 
 
 

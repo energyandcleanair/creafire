@@ -3,12 +3,11 @@ library(tidyverse)
 library(creadeweather)
 library(rcrea)
 
-setwd("~/studies/202110_india_burning/")
 lag <- seq(1,3)
 training_fraction <- 0.9
-location_id <- rcrea::cities(name="Delhi")$id # name=c("Chandigarh", "Varanasi", "Kolkata", "Gurugram", "Lucknow"))$id
+location_id <- rcrea::cities(name=c("Lahore", "Bangkok"))$id #Delhi")$id # name=c("Chandigarh", "Varanasi", "Kolkata", "Gurugram", "Lucknow"))$id
 training_start <- c("2015-01-01")
-cv_folds <- c(9)
+cv_folds <- c(3, 9)
 duration_hour <- c(24, 72, 120)
 buffer_km <- c(10, 50)
 split_days <- c(T,F)
@@ -18,6 +17,9 @@ source <- c("cpcb","airnow","air4thai","doemy")
 configs <- crossing(lag, training_fraction, location_id, training_start, source=list(source),
                     duration_hour, buffer_km, split_days, fire_source,
                     cv_folds)
+c=configs[1,]
+deweather(1, 0.9, "lahore_pak.7_1_pk",
+          "2015-01-01", c("cpcb","airnow","air4thai","doemy"), 24,10,F,'viirs',3)
 
 deweather <- function(lag, training_fraction, location_id, training_start, source,
                       duration_hour, buffer_km, split_days, fire_source, cv_folds,

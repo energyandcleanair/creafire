@@ -6,8 +6,6 @@ setwd('../defire')
 
 
 # Tianjin -----------------------------------------------------------------
-
-
 location_id <- "tianjin_chn.27_1_cn"
 
 fs <- list.files("upload",paste0(location_id, ".meas*"), full.names = T)
@@ -159,8 +157,6 @@ ggplot(bind_rows(contrib.crea, contrib.off),
   )
 
 # Jakarta -----------------------------------------------------------------
-
-
 location_id <- "jakarta_idn.7_1_id"
 
 fs <- list.files("upload",paste0(location_id, ".meas*"), full.names = T)
@@ -169,7 +165,6 @@ m.dew <- lapply(fs,function(f){
   readRDS(f) %>% mutate(buffer=details[2],
                         duration=details[3])
 }) %>% do.call(bind_rows,.)
-
 
 saveRDS(m.dew, file.path("validation","m.dew.jakarta.RDS"))
 
@@ -275,6 +270,5 @@ ggplot(bind_rows(contrib.crea, contrib.off),
   )
 
 
-# Xiamen ------------------------------------------------------------------
 
 
