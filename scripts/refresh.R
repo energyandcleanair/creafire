@@ -1,4 +1,7 @@
 install.packages('tidyverse',repos='http://cran.us.r-project.org')
+install.packages('curl',repos='http://cran.us.r-project.org')
+install.packages('googleAuthR',repos='http://cran.us.r-project.org')
+
 library(tidyverse)
 library(remotes)
 
@@ -8,7 +11,12 @@ remotes::install_github('energyandcleanair/creatrajs', upgrade=F)
 remotes::install_github('energyandcleanair/creafire', upgrade=F)
 remotes::install_github('energyandcleanair/rcrea', upgrade=F)
 
-# options(httr_oauth_cache=T)
+
+# Faced HTTP/2 stream 0 was not closed cleanly: PROTOCOL_ERROR
+# Fixing attempt: force using HTTP 1.1 (the number 2 is an enum value)
+handle <- curl::new_handle(verbose = TRUE)
+curl::handle_setopt(handle, http_version = 2)
+httr::set_config(httr::config(http_version = 2))
 
 library(creadeweather)
 library(tidyverse)
@@ -66,12 +74,12 @@ config_malaysia <- tibble(
 
 
 configs <- bind_rows(
-  config_india,
+  config_thailand,
   config_pakistan,
   config_thailand,
-  config_malaysia
+  config_malaysia,
+  config_india
 )
-
 
 print(configs)
 lapply(seq(nrow(configs)),
