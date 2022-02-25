@@ -131,6 +131,7 @@ defire <- function(location_ids=NULL,
                                      duration_hour=duration_hour,
                                      buffer_km=buffer_km,
                                      height=height,
+                                     met_type=met_type,
                                      fire_source=fire_source)  
                  }
                  
