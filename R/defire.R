@@ -31,13 +31,11 @@ defire <- function(location_ids=NULL,
 		               date_to=lubridate::today(),
 		               training_end_anomaly=lubridate::today(),
 		               poll=c("pm25"),
-                   upload_results=T,
-		               upload_folder="upload",
 		               duration_hour=120,
 		               buffer_km=50,
 		               height=10, #if null or NA, will be PBL average
-		               force_recompute_weather=F,
-		               download_from_gcs=F,
+		               use_cache=T,
+		               save_to_cache=use_cache,
 		               fire_source="viirs",
 		               parallel=T
 ){
@@ -55,8 +53,8 @@ defire <- function(location_ids=NULL,
   message(length(location_ids)," locations found")
 
 
-  dir.create(upload_folder, showWarnings = F)
-  fs <- list.files(upload_folder, include.dirs = F, full.names = T, recursive = T)
+  # dir.create(upload_folder, showWarnings = F)
+  # fs <- list.files(upload_folder, include.dirs = F, full.names = T, recursive = T)
 
   lapply(location_ids,
          function(location_id){
@@ -84,50 +82,81 @@ defire <- function(location_ids=NULL,
 
 
            # Trajs are the same whether or not we use viirs or gfas
-           suffix_trajs <- sprintf("%skm.%sh.%s.RDS",
-                                   buffer_km,
-                                   duration_hour,
-                                   ifelse(is.null(height)|is.na(height),"pbl",paste0(height,"m")))
-
-           suffix <- gsub("\\.RDS",
-                          ifelse(fire_source=="viirs",".viirs.RDS",".gfas.RDS"),
-                          suffix_trajs)
-
-
-           prefix <- location_id
-
-           file.trajs <- file.path(upload_folder, sprintf("%s.trajs.%s", prefix, suffix_trajs))
-           file.fires <- file.path(upload_folder, sprintf("%s.fires.%s", prefix, suffix))
-           file.meas <- file.path(upload_folder, sprintf("%s.meas.%s", prefix, suffix))
-           file.weather <- file.path(upload_folder, sprintf("%s.weather.%s", prefix, suffix))
-           file.weatherlite <- file.path(upload_folder, sprintf("%s.weatherlite.%s", prefix, suffix)) # A liter version to be used by dashboard
+           # suffix_trajs <- sprintf("%skm.%sh.%s.RDS",
+           #                         buffer_km,
+           #                         duration_hour,
+           #                         ifelse(is.null(height)|is.na(height),"pbl",paste0(height,"m")))
+           # 
+           # suffix <- gsub("\\.RDS",
+           #                ifelse(fire_source=="viirs",".viirs.RDS",".gfas.RDS"),
+           #                suffix_trajs)
+           # 
+           # 
+           # prefix <- location_id
+           # 
+           # file.trajs <- file.path(upload_folder, sprintf("%s.trajs.%s", prefix, suffix_trajs))
+           # file.fires <- file.path(upload_folder, sprintf("%s.fires.%s", prefix, suffix))
+           # file.meas <- file.path(upload_folder, sprintf("%s.meas.%s", prefix, suffix))
+           # file.weather <- file.path(upload_folder, sprintf("%s.weather.%s", prefix, suffix))
+           # file.weatherlite <- file.path(upload_folder, sprintf("%s.weatherlite.%s", prefix, suffix)) # A liter version to be used by dashboard
 
            # Download existing weather data if required
-           if(!force_recompute_weather & download_from_gcs){
-               fs <- basename(c(file.meas, file.trajs, file.weather))
-               gcs.download(fs, upload_folder)
-           }
+           # if(!force_recompute_weather & download_from_gcs){
+           #     fs <- basename(c(file.meas, file.trajs, file.weather))
+           #     gcs.download(fs, upload_folder)
+           # }
 
            # Update weather data if required
-           if(!force_recompute_weather & file.exists(file.weather)){
-             read_weather_filename <- tryCatch({
-               readRDS(file.weather) %>%
-                 update_weather(meas=m,
-                                duration_hour=duration_hour,
-                                buffer_km=buffer_km,
-                                height=height,
-                                file_trajs = file.trajs)
+             weather_filepath <- NULL
+             if(use_cache){
+               weather <- db.download_weather(location_id=location_id,
+                                              duration_hour=duration_hour,
+                                              buffer_km=buffer_km,
+                                              height=height,
+                                              fire_source=fire_source)
                
-               saveRDS(weather, file.weather)
-               # Use it
-               file.weather
-             }, error=function(e){
-               print(sprintf("Failed to read or update: %s", file.weather))
-               return(NULL)
-             })
-           }else{
-             read_weather_filename <- NULL
-           }
+               if(nrow(weather)==0){print("No cache found")}
+               if(nrow(weather)>1){print("More than one cache file found")}
+               if(nrow(weather)==1){
+                 w <- weather$weather[[1]]
+                 w <- update_weather(weather=w,
+                                     meas=m,
+                                     duration_hour=duration_hour,
+                                     buffer_km=buffer_km,
+                                     height=height,
+                                     fire_source=fire_source)
+                 
+                 if(save_to_cache){
+                   db.upload_weather(w, location_id=location_id,
+                                     duration_hour=duration_hour,
+                                     buffer_km=buffer_km,
+                                     height=height,
+                                     fire_source=fire_source)  
+                 }
+                 
+                 weather_filepath <- file.path(tempdir(), "weather.RDS")
+                 saveRDS(w, weather_filepath)
+               }
+              }
+           # if(!force_recompute_weather & file.exists(file.weather)){
+           #   read_weather_filename <- tryCatch({
+           #     readRDS(file.weather) %>%
+           #       update_weather(meas=m,
+           #                      duration_hour=duration_hour,
+           #                      buffer_km=buffer_km,
+           #                      height=height,
+           #                      file_trajs = file.trajs)
+           #     
+           #     saveRDS(weather, file.weather)
+           #     # Use it
+           #     file.weather
+           #   }, error=function(e){
+           #     print(sprintf("Failed to read or update: %s", file.weather))
+           #     return(NULL)
+           #   })
+           # }else{
+           #   read_weather_filename <- NULL
+           # }
 
 
            print("Deweathering")
@@ -141,21 +170,20 @@ defire <- function(location_ids=NULL,
                                              lag=3,
                                              training.fraction=0.9,
                                              cv_folds=6,
-                                             save_trajs_filename=file.trajs,
-                                             save_weather_filename=file.weather,
                                              fire_source=fire_source,
                                              fire_duration_hour = duration_hour,
                                              fire_buffer_km = buffer_km,
                                              trajs_height=height,
                                              trajs_parallel=parallel,
-                                             read_weather_filename=read_weather_filename,
                                              keep_model = T,
                                              link=c("linear"),
                                              upload_results = F,
-
+                                             
+                                             # Save (soon won't be used)
+                                             save_trajs_filename=file.trajs,
+                                             save_weather_filename=file.weather,
+                                             read_weather_filename=weather_filepath
            )
-
-
            print("Done")
 
            # Export measurements -----------------------------------------------------

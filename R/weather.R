@@ -12,7 +12,7 @@ update_weather <- function(weather,
                            duration_hour,
                            buffer_km,
                            height,
-                           file_trajs){
+                           fire_source){
 
   meas_missing <- meas %>%
     left_join(weather %>%
@@ -34,7 +34,7 @@ update_weather <- function(weather,
     sf::st_as_sf(sf_column_name="geometry", crs = 4326)
 
 
-  old_trajs <- readRDS(file_trajs)
+  # old_trajs <- readRDS(file_trajs)
 
   print("Getting new weather data")
   new_weather <- creadeweather::collect_weather(
@@ -45,18 +45,17 @@ update_weather <- function(weather,
     add_pbl=any(grepl("pbl", names(weather))),
     add_sunshine=F,
     add_fire=any(grepl("fire", names(weather))),
-    fire_source="viirs",
+    fire_source=fire_source,
     fire_mode="trajectory",
     fire_duration_hour=duration_hour,
     fire_buffer_km=buffer_km,
-    trajs_height=height,
-    save_trajs_filename=file_trajs
+    trajs_height=height
   )
 
-  print("Updating trajectories file")
-  bind_rows(old_trajs,
-            readRDS(file_trajs) %>% select_at(names(old_trajs))) %>%
-    saveRDS(file_trajs)
+  # print("Updating trajectories file")
+  # bind_rows(old_trajs,
+  #           readRDS(file_trajs) %>% select_at(names(old_trajs))) %>%
+  #   saveRDS(file_trajs)
 
   print("Combining weather")
   updated_weather <- bind_rows(weather,
