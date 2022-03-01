@@ -24,11 +24,13 @@ deploy_shiny <- function() {
   
   urls <- c(
     "tidyverse/lubridate",
+    "hubert-thieriot/splitr",
+    "energyandcleanair/creatrajs",
     "energyandcleanair/leaflet.extras2",
     "energyandcleanair/rcrea",
     "energyandcleanair/creafire")
 
-  devtools::install_github(urls, force=T, upgrade="never", auth_token = Sys.getenv("GITHUB_PAT"))
+  devtools::install_github(urls, force=F, upgrade="never", auth_token = Sys.getenv("GITHUB_PAT"))
 
   library(lubridate)
   library(leaflet.extras2)
