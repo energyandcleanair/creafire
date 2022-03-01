@@ -53,11 +53,11 @@ output$sidePlots <- renderPlotly({
 
 side_plot_poll <- reactive({
   
-  req(trajs_meas_all())
+  req(meas())
   poll <- input$poll
   req(input$running_width, poll)
   
-  m <- trajs_meas_all() %>%
+  m <- meas() %>%
     filter(poll==!!poll)
   
   if(nrow(m)==0){
@@ -237,12 +237,12 @@ side_plot_precip <- reactive({
 
 side_plot_firecontribution <- reactive({
   
-  req(trajs_meas_all())
+  req(meas())
   req(input$running_width)
   poll <- input$poll
   req(poll)
   
-  m <- trajs_meas_all() %>%
+  m <- meas() %>%
     filter(poll==!!poll)
   
   if(nrow(m)==0){

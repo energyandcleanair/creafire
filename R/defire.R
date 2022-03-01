@@ -34,6 +34,7 @@ defire <- function(location_ids=NULL,
 		               duration_hour=120,
 		               buffer_km=50,
 		               height=10, #if null or NA, will be PBL average
+		               met_type="gdas1",
 		               use_cache=T,
 		               save_to_cache=use_cache,
 		               fire_source="viirs",
@@ -115,9 +116,9 @@ defire <- function(location_ids=NULL,
                                               height=height,
                                               fire_source=fire_source)
                
-               if(nrow(weather)==0){print("No cache found")}
-               if(nrow(weather)>1){print("More than one cache file found")}
-               if(nrow(weather)==1){
+               if(is.null(weather) || nrow(weather)==0){print("No cache found")}
+               if(!is.null(weather) && nrow(weather)>1){print("More than one cache file found")}
+               if(!is.null(weather) && nrow(weather)==1){
                  w <- weather$weather[[1]]
                  w <- update_weather(weather=w,
                                      meas=m,
@@ -181,56 +182,62 @@ defire <- function(location_ids=NULL,
                                              upload_results = F,
                                              
                                              # Save (soon won't be used)
-                                             save_trajs_filename=file.trajs,
-                                             save_weather_filename=file.weather,
+                                             # save_trajs_filename=file.trajs,
+                                             # save_weather_filename=weather_filepath,
                                              read_weather_filename=weather_filepath
            )
            print("Done")
 
            # Export measurements -----------------------------------------------------
-           m.dew %>%
+           m <- m.dew %>%
              filter(output %in% c("counterfactual")) %>%
              tidyr::unnest(normalised) %>%
              dplyr::select(
                location_id, date, poll, unit, source, observed, predicted, predicted_nofire, model
-             ) %>%
-             saveRDS(file.meas)
-
-
+             )
+           db.upload_meas(m,
+                          location_id=location_id,
+                          duration_hour=duration_hour,
+                          buffer_km=buffer_km,
+                          height=height,
+                          met_type=met_type,
+                          fire_source=fire_source) 
+           # saveRDS(m, file.meas)
+        
            # Export trajs (lite) -----------------------------------------------------
            # Will be read online each time. Better have something as light as possible
-           trajs <- readRDS(file.trajs)
-           trajs.lite <- trajs %>%
-             select(location_id, date, trajs) %>%
-             rowwise() %>%
-             mutate(trajs=list(trajs %>% select(
-               run, traj_dt, lat, lon)
-             ))
-           saveRDS(trajs.lite, file.trajs)
+           # trajs <- readRDS(file.trajs)
+           # trajs.lite <- trajs %>%
+           #   select(location_id, date, trajs) %>%
+           #   rowwise() %>%
+           #   mutate(trajs=list(trajs %>% select(
+           #     run, traj_dt, lat, lon)
+           #   ))
+           # saveRDS(trajs.lite, file.trajs)
 
 
            # Export weather (lite) -----------------------------------------------------
            # Will be read online each time. Better have something as light as possible
-           weather <- readRDS(file.weather)
-           weather.lite <- weather %>%
-             dplyr::select(location_id, date, fire_frp, fire_count, precip)
-
-           saveRDS(weather.lite, file.weatherlite)
-
-           # Upload ------------------------------------------------------------------
-          if(upload_results){
-            fs <- c(file.meas, file.trajs, file.weatherlite)
-            gcs.upload(fs)
-          }
+          #  weather <- readRDS(file.weather)
+          #  weather.lite <- weather %>%
+          #    dplyr::select(location_id, date, fire_frp, fire_count, precip)
+          # 
+          #  saveRDS(weather.lite, file.weatherlite)
+          # 
+          #  # Upload ------------------------------------------------------------------
+          # if(upload_results){
+          #   fs <- c(file.meas, file.trajs, file.weatherlite)
+          #   gcs.upload(fs)
+          # }
 
 
            # Memory usage keeps growing, not sure why
            # Lines below probably don't do much
-           rm(m)
-           rm(m.dew)
-           rm(trajs)
-           rm(trajs.lite)
-           gc()
+           # rm(m)
+           # rm(m.dew)
+           # rm(trajs)
+           # rm(trajs.lite)
+           # gc()
 
          }, error=function(e){
            msg <- paste0("Failed for location: ", location_id, "\n", e)

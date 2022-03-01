@@ -8,20 +8,20 @@ trajs_add_log <- function(message){
   trajs_logs$msg <- paste(isolate(trajs_logs$msg), "\n", message)
 }
 
-read_gcs_url <- function(url, force_uncache=T){
-  tryCatch({
-    trajs_add_log(url)
-    if(force_uncache){
-      url <- paste0(url,"?a=1") # GCS caches files otherwise
-    }
-    r <- readRDS(url(gsub(" ","%20",url)))
-    trajs_add_log("SUCCESS")
-    r
-  },error=function(e){
-    trajs_add_log("FAILED")
-    return(NULL)
-  })
-}
+# read_gcs_url <- function(url, force_uncache=T){
+#   tryCatch({
+#     trajs_add_log(url)
+#     if(force_uncache){
+#       url <- paste0(url,"?a=1") # GCS caches files otherwise
+#     }
+#     r <- readRDS(url(gsub(" ","%20",url)))
+#     trajs_add_log("SUCCESS")
+#     r
+#   },error=function(e){
+#     trajs_add_log("FAILED")
+#     return(NULL)
+#   })
+# }
 
 # Not refreshing for every intermediate step
 # when sliding date
@@ -30,52 +30,17 @@ trajs_date <- reactive({
 }) %>% debounce(1000)
 
 
-trajs_files <- reactive({
-  trajs_add_log("Listing available files")
-
-  # Get list of trajectories available
-  gcs_get_bucket(trajs.bucket)
-  files <- gcs_list_objects(prefix=paste0(trajs.folder,"/"),
-                            detail = "summary",
-                            delimiter = "/")
-  trajs_add_log(sprintf("%d files found", nrow(files)))
-
-  # Trajectories (no fire source in it)
-  files.trajs <- files %>%
-    dplyr::filter(stringr::str_detect(name, ".trajs..*.RDS$")) %>%
-    mutate(location_id=gsub(".trajs.*.RDS","",basename(name))) %>%
-    mutate(details=stringr::str_match(basename(name),
-                                      sprintf("%s.trajs.(.*?).RDS",location_id))[,2]) %>%
-    tidyr::separate(details, c("buffer","duration","pbl")) %>%
-    rename(gcs_name_trajs=name) %>%
-    filter(pbl %in% c("10m","50m")) %>%
-    select(location_id, buffer, duration, pbl, gcs_name_trajs)
-
-  # Weather & measurements
-  files.meas_weather <- files %>%
-    dplyr::filter(stringr::str_detect(name, ".(weatherlite|meas)..*.RDS$")) %>%
-    mutate(location_id=gsub(".(weatherlite|meas).*.RDS","",basename(name))) %>%
-    mutate(details=stringr::str_match(basename(name),
-                                      sprintf("%s.(weatherlite|meas).(.*?).RDS",location_id))[,3]) %>%
-    tidyr::separate(details, c("buffer","duration","pbl","firesource")) %>%
-    rename(gcs_name=name) %>%
-    mutate(meas_or_weather=ifelse(stringr::str_detect(gcs_name, ".(weatherlite)..*.RDS$"), "weather","meas")) %>%
-    select(location_id, buffer, duration, pbl, gcs_name, firesource, meas_or_weather) %>%
-    tidyr::pivot_wider(names_from=meas_or_weather, values_from=gcs_name, names_prefix="gcs_name_") %>%
-    filter(pbl %in% c("10m","50m"))
-
-  full_join(files.trajs, files.meas_weather)
+available <- reactive({
+  db.available_weather()
 })
 
 
 locations <- reactive({
-  req(trajs_files())
-  rcrea::locations(id=unique(trajs_files()$location_id),
+  req(available())
+  rcrea::locations(id=unique(available()$location_id),
                    level=c("station","city"),
                    with_metadata=F,
                    with_geometry=T) %>%
-    dplyr::left_join(trajs_files(),
-                     by=c("id"="location_id")) %>%
     dplyr::distinct(id, name, country, geometry)
 })
 
@@ -92,6 +57,15 @@ location_id <- reactive({
 })
 
 
+available_location <- reactive({
+  req(available())
+  req(location_id())
+
+  available() %>%
+    filter(location_id==location_id())
+})
+
+
 location_geometry <- reactive({
   req(input$city)
   req(input$country)
@@ -104,91 +78,90 @@ location_geometry <- reactive({
 })
 
 
-trajs_file <- reactive({
+weather <- reactive({
   req(location_id())
   req(input$trajs_buffer)
   req(input$trajs_duration)
   req(input$firesource)
 
-  trajs_files() %>%
-    filter(location_id==location_id(),
-           buffer==input$trajs_buffer,
-           duration==input$trajs_duration,
-           (input$firesource=="NA" & is.na(firesource)) | (firesource==input$firesource))
+  db.download_weather(
+    location_id=location_id(),
+    met_type=met_type,
+    height=height,
+    buffer_km=as.numeric(input$trajs_buffer),
+    duration_hour=as.numeric(input$trajs_duration),
+    fire_source=input$firesource
+  ) %>%
+    select(weather) %>% 
+    tidyr::unnest(weather)
 })
 
 
-trajs <- reactive({
-  req(trajs_file())
-  gcs_url <- paste0(trajs.bucket_base_url, trajs_file()$gcs_name_trajs)
-  read_gcs_url(gcs_url)
+meas <- reactive({
+  req(location_id())
+  req(input$trajs_buffer)
+  req(input$trajs_duration)
+  req(input$firesource)
+  
+  db.download_meas(
+    location_id=location_id(),
+    met_type=met_type,
+    height=height,
+    buffer_km=as.numeric(input$trajs_buffer),
+    duration_hour=as.numeric(input$trajs_duration),
+    fire_source=input$firesource
+  ) %>%
+    select(meas) %>%
+    tidyr::unnest(meas)
 })
 
 
 trajs_dates <- reactive({
-  req(trajs())
-  trajs() %>%
-    dplyr::pull(date) %>%
-    unique() %>%
+  req(location_id())
+  req(input$trajs_duration)
+  
+  creatrajs::db.available_dates(
+    location_id=location_id(),
+    duration_hour=as.numeric(input$trajs_duration),
+    met_type=met_type,
+    height=height
+  ) %>%
     sort(decreasing=T)
 })
 
 
 trajs_durations <- reactive({
-  req(location_id())
-  req(trajs_files())
+  req(available_location())
 
-  trajs_files() %>%
-    filter(location_id==location_id()) %>%
-    pull(duration) %>%
+  available_location() %>%
+    pull(duration_hour) %>%
     unique()
 })
 
 
 trajs_buffers <- reactive({
-  req(location_id())
-  req(trajs_files())
-
-  trajs_files() %>%
-    filter(location_id==location_id()) %>%
-    pull(buffer) %>%
+  req(available_location())
+  
+  available_location() %>%
+    pull(buffer_km) %>%
     unique()
 })
 
 
 firesources <- reactive({
-  req(location_id())
-  req(trajs_files())
-
-  trajs_files() %>%
-    filter(location_id==location_id()) %>%
-    pull(firesource) %>%
+  req(available_location())
+  
+  available_location() %>%
+    pull(fire_source) %>%
     unique() %>%
     tidyr::replace_na("NA")
 })
 
 
-weather <- reactive({
-  req(trajs_file())
-  gcs_url <- paste0(trajs.bucket_base_url, trajs_file()$gcs_name_weather)
-  read_gcs_url(gcs_url)
-})
-
-
-trajs_meas_all <- reactive({
-  req(trajs_file())
-  gcs_url <- paste0(trajs.bucket_base_url, trajs_file()$gcs_name_meas)
-  read_gcs_url(gcs_url)
-})
-
-
 polls <- reactive({
-  req(trajs_meas_all())
-
-  polls <- trajs_meas_all() %>%
-    pull(poll) %>%
-    unique()
-
+  req(meas())
+  
+  polls <- unique(meas()$poll)
   names(polls) <- rcrea::poll_str(polls)
   return(polls)
 })
@@ -196,30 +169,33 @@ polls <- reactive({
 
 trajs_meas_date <- reactive({
 
-  req(trajs_meas_all())
+  req(meas())
   req(trajs_date())
 
-  trajs_meas_all() %>%
+  meas() %>%
     dplyr::filter(date==trajs_date())
 
 })
 
 
 trajs_points <- reactive({
-  req(trajs())
+  
   req(trajs_date())
 
-  date_ <- tolower(trajs_date())
-
-  tryCatch({
-    trajs() %>%
-      dplyr::filter(date==date_) %>%
-      tidyr::unnest(trajs, names_sep=".") %>%
-      dplyr::select(date=trajs.traj_dt, lon=trajs.lon, lat=trajs.lat, run=trajs.run)
-  }, error=function(e){
-    trajs_add_log(sprintf("Failed to read trajectories (%s)",e))
+  trajs <- creatrajs::db.download_trajs(
+    location_id=location_id(),
+    met_type=met_type,
+    height=height,
+    date=as.Date(trajs_date()),
+    duration_hour=as.numeric(input$trajs_duration)
+  )
+  
+  if(is.null(trajs)){
     return(NULL)
-  })
+  }
+  trajs %>%
+    tidyr::unnest(trajs, names_sep=".") %>%
+    dplyr::select(date=trajs.traj_dt, lon=trajs.lon, lat=trajs.lat, run=trajs.run)
 })
 
 

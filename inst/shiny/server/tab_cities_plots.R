@@ -132,11 +132,11 @@ plot_fire_frp <- reactive({
 
 plot_fire_contribution <- reactive({
   
-  req(trajs_meas_all())
+  req(meas())
   poll <- input$poll
   req(input$running_width, poll)
   
-  m <- trajs_meas_all() %>%
+  m <- meas() %>%
     filter(poll==!!poll)
   
   if(nrow(m)==0){
@@ -180,11 +180,11 @@ plot_fire_contribution <- reactive({
 
 plot_poll <- reactive({
   
-  req(trajs_meas_all())
+  req(meas())
   poll <- input$poll
   req(input$running_width, poll)
   
-  m <- trajs_meas_all() %>%
+  m <- meas() %>%
     filter(poll==!!poll)
   
   if(nrow(m)==0){

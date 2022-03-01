@@ -26,3 +26,8 @@ trajs_gibs_layers <- list(
 
 sentinel_url = "https://creodias.sentinel-hub.com/ogc/wms/a6993002-3fe5-45f9-8318-e23b1a5f21b1"
 sentinel_layers = list("NO2"="NO2VISUALISED")
+
+
+# Default values
+met_type = "gdas1"
+height = 10
