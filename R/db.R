@@ -1,3 +1,9 @@
+db.get_collection <- function(collection_name){
+  readRenviron(".Renviron")
+  connection_string=Sys.getenv("CREA_MONGODB_URL")
+  mongolite::mongo(collection=collection_name, db="creafire", url=connection_string)
+}
+
 db.get_gridfs_weather <- function(){
   readRenviron(".Renviron")
   connection_string=Sys.getenv("CREA_MONGODB_URL")
@@ -12,12 +18,12 @@ db.get_gridfs_meas <- function(){
 
 
 db.get_unique_columns_weather <- function(){
-  c("location_id", "duration_hour", "height", "met_type", "buffer_km", "fire_source", "fire_split")
+  c("location_id", "duration_hour", "hours", "height", "met_type", "buffer_km", "fire_source", "fire_split")
 }
 
 
 db.get_unique_columns_meas <- function(){
-  c("location_id", "duration_hour", "height", "met_type", "buffer_km", "fire_source", "fire_split")
+  c("location_id", "duration_hour", "hours", "height", "met_type", "buffer_km", "fire_source", "fire_split")
 }
 
 db.available_metadata <- function(fs, col_names){
@@ -78,7 +84,15 @@ db.setup_db <- function(){
 
 
 db.upload_weather <- function(weather,
-                            location_id, met_type, height, duration_hour, buffer_km, fire_source, fire_split=NULL){
+                              location_id,
+                              met_type,
+                              height,
+                              duration_hour,
+                              buffer_km,
+                              hours,
+                              fire_source,
+                              fire_split=NULL){
+  
   fs <- db.get_gridfs_weather()
   tmpdir <- tempdir()
   filepath <- file.path(tmpdir, "weather.RDS")
@@ -86,6 +100,7 @@ db.upload_weather <- function(weather,
 
   metadata <- list(location_id=location_id,
                    duration_hour=duration_hour,
+                   hours=paste0(hours, collapse=','),
                    height=height,
                    met_type=met_type,
                    buffer_km=buffer_km,
@@ -108,7 +123,7 @@ db.upload_weather <- function(weather,
 
 
 db.upload_meas <- function(meas,
-                           location_id, met_type, height, duration_hour, buffer_km, fire_source, fire_split=NULL){
+                           location_id, met_type, height, duration_hour, hours, buffer_km, fire_source, fire_split=NULL){
   fs <- db.get_gridfs_meas()
   tmpdir <- tempdir()
   filepath <- file.path(tmpdir, "meas.RDS")
@@ -116,6 +131,7 @@ db.upload_meas <- function(meas,
   
   metadata <- list(location_id=location_id,
                    duration_hour=duration_hour,
+                   hours=paste0(hours, collapse=','),
                    height=height,
                    met_type=met_type,
                    buffer_km=buffer_km,
@@ -137,11 +153,12 @@ db.upload_meas <- function(meas,
 }
 
 
-db.find_weather <- function(location_id, met_type=NULL, height=NULL, duration_hour=NULL, buffer_km=NULL, fire_source=NULL, fire_split=NULL){
+db.find_weather <- function(location_id, met_type=NULL, height=NULL, duration_hour=NULL, hours=NULL, buffer_km=NULL, fire_source=NULL, fire_split=NULL){
   fs <- db.get_gridfs_weather()
 
   filter <- list(metadata.location_id=location_id,
-                   metadata.duration_hour=duration_hour,
+                 metadata.duration_hour=duration_hour,
+                 metadata.hours=paste0(hours, collapse=','),
                    metadata.height=height,
                    metadata.met_type=met_type,
                    metadata.buffer_km=buffer_km,
@@ -153,11 +170,12 @@ db.find_weather <- function(location_id, met_type=NULL, height=NULL, duration_ho
 }
 
 
-db.find_meas <- function(location_id, met_type=NULL, height=NULL, duration_hour=NULL, buffer_km=NULL, fire_source=NULL, fire_split=NULL){
+db.find_meas <- function(location_id, met_type=NULL, height=NULL, duration_hour=NULL, hours=NULL, buffer_km=NULL, fire_source=NULL, fire_split=NULL){
   fs <- db.get_gridfs_meas()
   
   filter <- list(metadata.location_id=location_id,
                  metadata.duration_hour=duration_hour,
+                 metadata.hours=paste0(hours, collapse=','),
                  metadata.height=height,
                  metadata.met_type=met_type,
                  metadata.buffer_km=buffer_km,
@@ -169,9 +187,9 @@ db.find_meas <- function(location_id, met_type=NULL, height=NULL, duration_hour=
 }
 
 
-db.remove_weather <- function(location_id, met_type=NULL, height=NULL, duration_hour=NULL, buffer_km=NULL, fire_source=NULL, fire_split=NULL){
+db.remove_weather <- function(location_id, met_type=NULL, height=NULL, duration_hour=NULL, hours=NULL, buffer_km=NULL, fire_source=NULL, fire_split=NULL){
   fs <- db.get_gridfs_weather()
-  found <- db.find_weather(location_id=location_id, met_type=met_type, height=height, duration_hour=duration_hour,
+  found <- db.find_weather(location_id=location_id, met_type=met_type, height=height, duration_hour=duration_hour, hours=hours,
                            fire_source=fire_source, buffer_km=buffer_km, fire_split=fire_split)
 
   if(nrow(found)>0) fs$remove(paste0("id:", found$id))
@@ -179,9 +197,9 @@ db.remove_weather <- function(location_id, met_type=NULL, height=NULL, duration_
 }
 
 
-db.download_weather <- function(location_id=NULL, met_type=NULL, height=NULL, duration_hour=NULL, buffer_km=NULL, fire_source=NULL, fire_split=NULL){
+db.download_weather <- function(location_id=NULL, met_type=NULL, height=NULL, duration_hour=NULL, hours=NULL, buffer_km=NULL, fire_source=NULL, fire_split=NULL){
   fs <- db.get_gridfs_weather()
-  found <- db.find_weather(location_id=location_id, met_type=met_type, height=height, duration_hour=duration_hour,
+  found <- db.find_weather(location_id=location_id, met_type=met_type, height=height, duration_hour=duration_hour, hours=hours,
                          fire_source=fire_source, buffer_km=buffer_km, fire_split=fire_split)
 
   if(nrow(found)==0) return(NULL)
@@ -208,9 +226,9 @@ db.download_weather <- function(location_id=NULL, met_type=NULL, height=NULL, du
 }
 
 
-db.download_meas <- function(location_id=NULL, met_type=NULL, height=NULL, duration_hour=NULL, buffer_km=NULL, fire_source=NULL, fire_split=NULL){
+db.download_meas <- function(location_id=NULL, met_type=NULL, height=NULL, duration_hour=NULL, hours=NULL, buffer_km=NULL, fire_source=NULL, fire_split=NULL){
   fs <- db.get_gridfs_meas()
-  found <- db.find_meas(location_id=location_id, met_type=met_type, height=height, duration_hour=duration_hour,
+  found <- db.find_meas(location_id=location_id, met_type=met_type, height=height, duration_hour=duration_hour, hours=hours,
                            fire_source=fire_source, buffer_km=buffer_km, fire_split=fire_split)
   
   if(nrow(found)==0) return(NULL)
