@@ -108,7 +108,8 @@ defire <- function(location_ids=NULL,
            # }
 
            # Update weather data if required
-             weather_filepath <- NULL
+             weather_filepath <- file.path(tempdir(), "weather.RDS")
+             
              if(use_cache){
                weather <- db.download_weather(location_id=location_id,
                                               duration_hour=duration_hour,
@@ -116,9 +117,32 @@ defire <- function(location_ids=NULL,
                                               height=height,
                                               fire_source=fire_source)
                
-               if(is.null(weather) || nrow(weather)==0){print("No cache found")}
-               if(!is.null(weather) && nrow(weather)>1){print("More than one cache file found")}
+               
+               if(!is.null(weather) && nrow(weather)>1){stop("More than one weather cache file found")}
+               
+               if(is.null(weather) || nrow(weather)==0){
+                 print("No weather cache found")
+                 w <- creadeweather::collect_weather(
+                   meas=m[m$location_id==location_id,] %>%
+                     dplyr::group_by(location_id, country, geometry) %>%
+                     tidyr::nest() %>%
+                     dplyr::rename(meas=data),
+                   years=unique(lubridate::year(m$date)),
+                   years_force_refresh=NULL,
+                   n_per_station=4,
+                   add_pbl=T,
+                   add_sunshine=F,
+                   add_fire=T,
+                   fire_source=fire_source,
+                   fire_mode="trajectory",
+                   fire_duration_hour=duration_hour,
+                   fire_buffer_km=buffer_km,
+                   trajs_height=height
+                 )
+               }
+               
                if(!is.null(weather) && nrow(weather)==1){
+                 print("Found weather in cache")
                  w <- weather$weather[[1]]
                  w <- update_weather(weather=w,
                                      meas=m,
@@ -126,19 +150,18 @@ defire <- function(location_ids=NULL,
                                      buffer_km=buffer_km,
                                      height=height,
                                      fire_source=fire_source)
-                 
-                 if(save_to_cache){
-                   db.upload_weather(w, location_id=location_id,
-                                     duration_hour=duration_hour,
-                                     buffer_km=buffer_km,
-                                     height=height,
-                                     met_type=met_type,
-                                     fire_source=fire_source)  
-                 }
-                 
-                 weather_filepath <- file.path(tempdir(), "weather.RDS")
-                 saveRDS(w, weather_filepath)
                }
+               
+               if(save_to_cache){
+                 db.upload_weather(w,
+                                   location_id=location_id,
+                                   duration_hour=duration_hour,
+                                   buffer_km=buffer_km,
+                                   height=height,
+                                   met_type=met_type,
+                                   fire_source=fire_source)  
+               }
+               saveRDS(w, weather_filepath)
               }
            # if(!force_recompute_weather & file.exists(file.weather)){
            #   read_weather_filename <- tryCatch({
@@ -183,7 +206,7 @@ defire <- function(location_ids=NULL,
                                              
                                              # Save (soon won't be used)
                                              # save_trajs_filename=file.trajs,
-                                             # save_weather_filename=weather_filepath,
+                                             save_weather_filename=weather_filepath,
                                              read_weather_filename=weather_filepath
            )
            print("Done")
