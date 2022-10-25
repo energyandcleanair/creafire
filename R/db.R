@@ -98,9 +98,12 @@ db.upload_weather <- function(weather,
   filepath <- file.path(tmpdir, "weather.RDS")
   saveRDS(weather, filepath)
 
+  hours <- if(is.null(hours) || is.na(hours)) NULL else {paste0(hours, collapse=',')}
+  height <- if(is.null(height) || is.na(height)) NULL else {height}
+  
   metadata <- list(location_id=location_id,
                    duration_hour=duration_hour,
-                   hours=paste0(hours, collapse=','),
+                   hours=hours,
                    height=height,
                    met_type=met_type,
                    buffer_km=buffer_km,
@@ -122,16 +125,18 @@ db.upload_weather <- function(weather,
 }
 
 
-db.upload_meas <- function(meas,
-                           location_id, met_type, height, duration_hour, hours, buffer_km, fire_source, fire_split=NULL){
+db.upload_meas <- function(meas, location_id, met_type, height, duration_hour, hours, buffer_km, fire_source, fire_split=NULL){
   fs <- db.get_gridfs_meas()
   tmpdir <- tempdir()
   filepath <- file.path(tmpdir, "meas.RDS")
   saveRDS(meas, filepath)
+
+  hours <- if(is.null(hours) || is.na(hours)) NULL else {paste0(hours, collapse=',')}
+  height <- if(is.null(height) || is.na(height)) NULL else {height}
   
   metadata <- list(location_id=location_id,
                    duration_hour=duration_hour,
-                   hours=paste0(hours, collapse=','),
+                   hours=hours,
                    height=height,
                    met_type=met_type,
                    buffer_km=buffer_km,
@@ -156,9 +161,12 @@ db.upload_meas <- function(meas,
 db.find_weather <- function(location_id, met_type=NULL, height=NULL, duration_hour=NULL, hours=NULL, buffer_km=NULL, fire_source=NULL, fire_split=NULL){
   fs <- db.get_gridfs_weather()
 
+  hours <- if(is.null(hours) || is.na(hours)) NULL else {paste0(hours, collapse=',')}
+  height <- if(is.null(height) || is.na(height)) NULL else {height}
+  
   filter <- list(metadata.location_id=location_id,
                  metadata.duration_hour=duration_hour,
-                 metadata.hours=paste0(hours, collapse=','),
+                 metadata.hours=hours,
                    metadata.height=height,
                    metadata.met_type=met_type,
                    metadata.buffer_km=buffer_km,
@@ -173,9 +181,12 @@ db.find_weather <- function(location_id, met_type=NULL, height=NULL, duration_ho
 db.find_meas <- function(location_id, met_type=NULL, height=NULL, duration_hour=NULL, hours=NULL, buffer_km=NULL, fire_source=NULL, fire_split=NULL){
   fs <- db.get_gridfs_meas()
   
+  hours <- if(is.null(hours) || is.na(hours)) NULL else {paste0(hours, collapse=',')}
+  height <- if(is.null(height) || is.na(height)) NULL else {height}
+  
   filter <- list(metadata.location_id=location_id,
                  metadata.duration_hour=duration_hour,
-                 metadata.hours=paste0(hours, collapse=','),
+                 metadata.hours=hours,
                  metadata.height=height,
                  metadata.met_type=met_type,
                  metadata.buffer_km=buffer_km,
@@ -255,6 +266,21 @@ db.download_meas <- function(location_id=NULL, met_type=NULL, height=NULL, durat
 }
 
 
+
+db.clean <- function(){
+  fs <- db.get_gridfs_weather()
+  
+  found <- fs$find('{}')
+  empty <- found[found$size==0,]
+  if(nrow(empty)>0) fs$remove(paste0("id:", empty$id))
+  
+  fs <- db.get_gridfs_meas()
+  
+  found <- fs$find('{}')
+  empty <- found[found$size==0,]
+  if(nrow(empty)>0) fs$remove(paste0("id:", empty$id))
+  
+}
 
 #' Upload weather and meas cached using previous system (i.e. on disk)
 #'

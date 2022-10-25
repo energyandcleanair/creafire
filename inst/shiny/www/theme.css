@@ -12,6 +12,13 @@ input[type="radio"] {
   margin: unset;
 }
 
+.col-sm-4 {
+  height: 100%; /*Trick to have side panel match height*/
+}
+
+#running_width {
+  height: unset;
+}
 #aboutCrea, #notready {
     margin-right: auto;
     margin-left: auto;
@@ -127,6 +134,10 @@ h4 {
 
 body{
   height: 100vh;
+}
+
+.dataTables_scrollBody {
+  border-bottom-width: 0 !important;
 }
 
 .container-fluid{

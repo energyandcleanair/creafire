@@ -68,43 +68,58 @@ side_plot_poll <- reactive({
   unit <- unique(m$unit)
   hovertemplate <- paste('%{y:.0f}',unit)
   
-  m <- m %>%
-    select(date, observed, predicted, predicted_nofire)
+  data <- m %>%
+    filter(variable %in% c('observed', 'predicted', 'predicted_nofire')) %>%
+    select(date, variable, value) %>%
+    rcrea::utils.running_average(as.numeric(input$running_width)) %>%
+    tidyr::spread(variable, value) 
   
-  m.rolled <- rcrea::utils.running_average(m, input$running_width, vars_to_avg = c("observed","predicted","predicted_nofire"))
+
   
-  
-  # selected <- which(trajs_meas_obs()$date==trajs_date())
-  m.rolled %>%
+  result <- data %>%
     plot_ly(
       type="scatter",
       mode="lines"
-    ) %>%
-    plotly::add_lines(x=~date,
-                      y=~observed,
-                      name="Observed",
-                      opacity=0.4,
-                      hovertemplate = hovertemplate,
-                      line = list(
-                        color = 'rgb(0, 0, 0)',
-                        width = 1
-                      )) %>%
-    plotly::add_lines(x=~date,
-                      y=~predicted,
-                      name="Predicted with fire",
-                      hovertemplate = hovertemplate,
-                      line = list(
-                        color = 'red',
-                        width = 2
-                      )) %>%
-    plotly::add_lines(x=~date,
-                      y=~predicted_nofire,
-                      name="Predicted without fire",
-                      hovertemplate = hovertemplate,
-                      line = list(
-                        color = 'orange',
-                        width = 2
-                      )) %>%
+    )
+  
+  if('observed' %in% names(data)){
+    result <- result %>%
+      plotly::add_lines(x=~date,
+                        y=~observed,
+                        name="Observed",
+                        opacity=0.4,
+                        hovertemplate = hovertemplate,
+                        line = list(
+                          color = 'rgb(0, 0, 0)',
+                          width = 1
+                        ))
+  }
+  
+  if('predicted' %in% names(data)){
+    result <- result %>%
+      plotly::add_lines(x=~date,
+                        y=~predicted,
+                        name="Predicted with fire",
+                        hovertemplate = hovertemplate,
+                        line = list(
+                          color = 'red',
+                          width = 2
+                        ))
+  }
+  
+  if('predicted_nofire' %in% names(data)){
+    result <- result %>%
+      plotly::add_lines(x=~date,
+                        y=~predicted_nofire,
+                        name="Predicted without fire",
+                        hovertemplate = hovertemplate,
+                        line = list(
+                          color = 'orange',
+                          width = 2
+                        ))
+  }
+  
+  result %>%
     plotly::layout(
       margin=list(t=200),
       showlegend = F,
@@ -148,20 +163,21 @@ side_plot_poll <- reactive({
 side_plot_fire <- reactive({
   
   req(weather())
+  req(selected_metadata())
   req(input$running_width)
-  req(input$firesource)
   
-  if(input$firesource=="gfas"){
+  if(selected_metadata()$fire_source=="gfas"){
     fire_value="pm25_emission"
     fire_name="PM25 emission from fires"
   }else{
     fire_value="fire_count"
     fire_name="Fire count"
   }
+  
   f <- weather() %>%
     dplyr::select_at(c("date", "value"=fire_value))
   
-  f.rolled <- rcrea::utils.running_average(f, input$running_width)
+  f.rolled <- rcrea::utils.running_average(f, as.numeric(input$running_width))
   
   # selected <- which(trajs_meas_obs()$date==trajs_date())
   f.rolled %>%
@@ -206,7 +222,7 @@ side_plot_precip <- reactive({
     dplyr::select(date, value=precip) %>%
     mutate(value=value/10) #NOAA ISD has a 10 scaling factor
   
-  f.rolled <- rcrea::utils.running_average(f, input$running_width)
+  f.rolled <- rcrea::utils.running_average(f, as.numeric(input$running_width))
   
   f.rolled %>%
     plot_ly(
@@ -253,16 +269,19 @@ side_plot_firecontribution <- reactive({
   unit <- unique(m$unit)
   
   hovertemplate <- paste('%{y:.0f}',unit)
-  m <- m %>%
-    select(date, observed, predicted, predicted_nofire) %>%
+  
+  data <- m %>%
+    filter(variable %in% c('observed', 'predicted', 'predicted_nofire')) %>%
+    select(date, variable, value) %>%
+    rcrea::utils.running_average(as.numeric(input$running_width)) %>%
+    tidyr::spread(variable, value) %>%
     mutate(value=predicted-predicted_nofire) %>%
     select(date, value)
   
-  m.rolled <- rcrea::utils.running_average(m, input$running_width)
-  
+
   
   # selected <- which(trajs_meas_obs()$date==trajs_date())
-  m.rolled %>%
+  data %>%
     plot_ly(
       type="scatter",
       mode="lines"

@@ -46,16 +46,15 @@ locations <- reactive({
 
 
 location_id <- reactive({
-  req(input$city)
-  req(input$country)
-
-  locations() %>%
-    dplyr::filter(country==input$country,
-                  name==input$city) %>%
-    dplyr::pull(id) %>%
-    unique()
+  req(input$tableConfigs_rows_selected)
+  available()[input$tableConfigs_rows_selected,]$location_id
 })
 
+
+selected_metadata <- reactive({
+  req(input$tableConfigs_rows_selected)
+  as.list(available()[input$tableConfigs_rows_selected,])
+})
 
 available_location <- reactive({
   req(available())
@@ -67,64 +66,78 @@ available_location <- reactive({
 
 
 location_geometry <- reactive({
-  req(input$city)
-  req(input$country)
-
   locations() %>%
-    dplyr::filter(country==input$country,
-                  name==input$city) %>%
+    dplyr::filter(id==location_id()) %>%
     dplyr::distinct(geometry) %>%
     dplyr::pull(geometry)
 })
 
 
 weather <- reactive({
-  req(location_id())
-  req(input$trajs_buffer)
-  req(input$trajs_duration)
-  req(input$firesource)
+  req(selected_metadata())
+  m <- selected_metadata()
+  # req(input$trajs_buffer)
+  # req(input$trajs_duration)
+  # req(input$firesource)
 
-  db.download_weather(
-    location_id=location_id(),
-    met_type=met_type,
-    height=height,
-    buffer_km=as.numeric(input$trajs_buffer),
-    duration_hour=as.numeric(input$trajs_duration),
-    fire_source=input$firesource
+  
+  w <- db.download_weather(
+    location_id=m$location_id,
+    met_type=m$met_type,
+    # height=m$height,
+    buffer_km=m$buffer_km,
+    duration_hour=m$duration_hour,
+    hours=m$hours,
+    fire_source=m$firesource
   ) %>%
+    filter((height==m$height) | (is.na(m$height) & is.na(height)))
+  
+  if(is.null(w)){
+    return(NULL)
+  }
+  w %>%
     select(weather) %>% 
     tidyr::unnest(weather)
 })
 
 
 meas <- reactive({
-  req(location_id())
-  req(input$trajs_buffer)
-  req(input$trajs_duration)
-  req(input$firesource)
+  req(selected_metadata())
+  m <- selected_metadata()
   
-  db.download_meas(
-    location_id=location_id(),
-    met_type=met_type,
-    height=height,
-    buffer_km=as.numeric(input$trajs_buffer),
-    duration_hour=as.numeric(input$trajs_duration),
-    fire_source=input$firesource
+  meas <- db.download_meas(
+    location_id=m$location_id,
+    met_type=m$met_type,
+    height=NULL,
+    buffer_km=m$buffer_km,
+    duration_hour=m$duration_hour,
+    hours=m$hours,
+    fire_source=m$firesource
   ) %>%
-    select(meas) %>%
-    tidyr::unnest(meas)
+    filter((height==m$height) | (is.na(m$height) & is.na(height)))
+  
+  if(!is.null(meas)){
+    return(
+      meas %>%
+        select(meas) %>%
+        tidyr::unnest(meas)
+    )
+  }else{
+    return(NULL)
+  }
+    
 })
 
 
 trajs_dates <- reactive({
-  req(location_id())
-  req(input$trajs_duration)
+  req(selected_metadata())
+  m <- selected_metadata()
   
   creatrajs::db.available_dates(
-    location_id=location_id(),
-    duration_hour=as.numeric(input$trajs_duration),
-    met_type=met_type,
-    height=height
+    location_id=m$location_id,
+    duration_hour=as.numeric(m$duration_hour),
+    met_type=m$met_type,
+    height=NULL, #m$height
   ) %>%
     sort(decreasing=T)
 })
@@ -180,19 +193,23 @@ trajs_meas_date <- reactive({
 
 trajs_points <- reactive({
   
+  req(selected_metadata())
   req(trajs_date())
-
+  m <- selected_metadata()
+  
   trajs <- creatrajs::db.download_trajs(
-    location_id=location_id(),
-    met_type=met_type,
-    height=height,
+    location_id=m$location_id,
+    met_type=m$met_type,
+    height=m$height,
     date=as.Date(trajs_date()),
-    duration_hour=as.numeric(input$trajs_duration)
+    duration_hour=m$duration_hour,
+    hours=m$hours
   )
   
   if(is.null(trajs)){
     return(NULL)
   }
+  
   trajs %>%
     tidyr::unnest(trajs, names_sep=".") %>%
     dplyr::select(date=trajs.traj_dt, lon=trajs.lon, lat=trajs.lat, run=trajs.run)
@@ -200,6 +217,23 @@ trajs_points <- reactive({
 
 
 # Output Elements --------------------------------------
+output$tableConfigs <- renderDT({
+  req(available())
+  datatable(available(),
+            rownames = FALSE,
+            options = list(
+              dom = 'ft',
+              autoWidth = TRUE,
+              lengthChange = FALSE,
+              deferRender = TRUE,
+              scrollY = 200,
+              scroller = TRUE
+            ),
+            selection='single',
+            extensions = c('Scroller', 'Responsive'),
+            )
+})
+
 output$radioMode <- renderUI({
   radioButtons("cities_mode", NULL, choices=c("Map"="map", "Charts"="charts"),
                selected="map", inline=T)
@@ -208,28 +242,50 @@ output$radioMode <- renderUI({
 
 output$selectInputRunning <- renderUI({
   req(locations()) # Not required, but added so that all ui elements appear together
-  sliderInput("running_width", "Rolling average (day)", min=1, max=30, value=7, step=1, sep="")
+  
+  windows <- list(
+    "None"=0,
+    "One week (7)"=7,
+    "Two weeks (14)"=14,
+    "One month (31)"=31)
+  
+  pickerInput("running_width", "Running average", choices=windows, selected=c(7),
+              options = list(`actions-box` = F), multiple = F)
+  
+  # numericInputIcon("running_width", "Rolling average (day)", min=1, max=30, value=7, step=1)
+  # numericInputIcon(
+  #   inputId,
+  #   label,
+  #   value,
+  #   min = NULL,
+  #   max = NULL,
+  #   step = NULL,
+  #   icon = NULL,
+  #   size = NULL,
+  #   help_text = NULL,
+  #   width = NULL
+  # )
 })
 
-
-output$selectInputCountry <- renderUI({
-
-  countries <- locations()$country %>% unique()
-  names(countries) = unlist(countrycode(countries, origin='iso2c', destination='country.name',
-                                        custom_match = list(XK='Kosovo')))
-
-  pickerInput("country","Country", choices=countries, options = list(`actions-box` = TRUE), multiple = F)
-})
-
-
-output$selectInputCity <- renderUI({
-  req(input$country)
-  cities <- locations() %>%
-    dplyr::filter(country==input$country) %>%
-    dplyr::pull(name) %>%
-    unique()
-  pickerInput("city","City", choices=cities, options = list(`actions-box` = TRUE), multiple = F)
-})
+# 
+# output$selectInputCountry <- renderUI({
+# 
+#   countries <- locations()$country %>% unique()
+#   names(countries) = unlist(countrycode(countries, origin='iso2c', destination='country.name',
+#                                         custom_match = list(XK='Kosovo')))
+# 
+#   pickerInput("country","Country", choices=countries, options = list(`actions-box` = TRUE), multiple = F)
+# })
+# 
+# 
+# output$selectInputCity <- renderUI({
+#   req(input$country)
+#   cities <- locations() %>%
+#     dplyr::filter(country==input$country) %>%
+#     dplyr::pull(name) %>%
+#     unique()
+#   pickerInput("city","City", choices=cities, options = list(`actions-box` = TRUE), multiple = F)
+# })
 
 
 output$selectInputDuration <- renderUI({
@@ -296,11 +352,13 @@ output$trajsInfos <- renderUI({
   l <- locations() %>%
     dplyr::filter(id==location_id()) %>%
     distinct(name)
-  d <- trajs_meas_date()
+  
+  d <- trajs_meas_date() %>%
+    tidyr::spread(variable, value)
 
   HTML(paste0("<b>",l$name," - ",d[["poll"]],"</b><br/>",
               trajs_date(),"<br/>",
-              "Observed: ", round(d[["observed"]]), " ",d[["unit"]], "<br/>",
+              # "Observed: ", round(d[["observed"]]), " ",d[["unit"]], "<br/>",
               "Predicted: ", round(d[["predicted"]]), " ",d[["unit"]], "<br/>",
               "Predicted (nofire): ", round(d[["predicted_nofire"]]), " ",d[["unit"]], "<br/>"
   ))

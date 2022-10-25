@@ -46,7 +46,7 @@ plot_fire_count <- reactive({
   
   req(weather())
   req(input$running_width)
-  req(input$firesource)
+  # req(input$firesource)
   
   if(input$firesource=="gfas"){
     fire_value="pm25_emission"
@@ -89,9 +89,11 @@ plot_fire_frp <- reactive({
   
   req(weather())
   req(input$running_width)
-  req(input$firesource)
+  req(selected_metadata())
   
-  if(input$firesource=="gfas"){
+  m <- selected_metadata()
+  
+  if(m$firesource=="gfas"){
     fire_value="pm25_emission"
     fire_name="PM25 emission from fires"
   }else{
