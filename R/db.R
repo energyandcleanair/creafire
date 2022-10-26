@@ -18,12 +18,12 @@ db.get_gridfs_meas <- function(){
 
 
 db.get_unique_columns_weather <- function(){
-  c("location_id", "duration_hour", "hours", "height", "met_type", "buffer_km", "fire_source", "fire_split")
+  c("location_id", "duration_hour", "hours", "height", "met_type", "buffer_km", "fire_source", "fire_split_regions")
 }
 
 
 db.get_unique_columns_meas <- function(){
-  c("location_id", "duration_hour", "hours", "height", "met_type", "buffer_km", "fire_source", "fire_split")
+  c("location_id", "duration_hour", "hours", "height", "met_type", "buffer_km", "fire_source", "fire_split_regions")
 }
 
 db.available_metadata <- function(fs, col_names){
@@ -91,7 +91,7 @@ db.upload_weather <- function(weather,
                               buffer_km,
                               hours,
                               fire_source,
-                              fire_split=NULL){
+                              fire_split_regions=NULL){
   
   fs <- db.get_gridfs_weather()
   tmpdir <- tempdir()
@@ -108,7 +108,7 @@ db.upload_weather <- function(weather,
                    met_type=met_type,
                    buffer_km=buffer_km,
                    fire_source=fire_source,
-                   fire_split=fire_split)
+                   fire_split_regions=fire_split_regions)
 
   # Remove first if exists
   filter <- metadata[db.get_unique_columns_weather()]
@@ -125,7 +125,7 @@ db.upload_weather <- function(weather,
 }
 
 
-db.upload_meas <- function(meas, location_id, met_type, height, duration_hour, hours, buffer_km, fire_source, fire_split=NULL){
+db.upload_meas <- function(meas, location_id, met_type, height, duration_hour, hours, buffer_km, fire_source, fire_split_regions=NULL){
   fs <- db.get_gridfs_meas()
   tmpdir <- tempdir()
   filepath <- file.path(tmpdir, "meas.RDS")
@@ -141,7 +141,7 @@ db.upload_meas <- function(meas, location_id, met_type, height, duration_hour, h
                    met_type=met_type,
                    buffer_km=buffer_km,
                    fire_source=fire_source,
-                   fire_split=fire_split)
+                   fire_split_regions=fire_split_regions)
   
   # Remove first if exists
   filter <- metadata[db.get_unique_columns_meas()]
@@ -158,11 +158,12 @@ db.upload_meas <- function(meas, location_id, met_type, height, duration_hour, h
 }
 
 
-db.find_weather <- function(location_id, met_type=NULL, height=NULL, duration_hour=NULL, hours=NULL, buffer_km=NULL, fire_source=NULL, fire_split=NULL){
+db.find_weather <- function(location_id, met_type=NULL, height=NULL, duration_hour=NULL, hours=NULL, buffer_km=NULL, fire_source=NULL, fire_split_regions=NULL){
   fs <- db.get_gridfs_weather()
 
   hours <- if(is.null(hours) || is.na(hours)) NULL else {paste0(hours, collapse=',')}
   height <- if(is.null(height) || is.na(height)) NULL else {height}
+  fire_split_regions <- if(is.null(fire_split_regions) || is.na(fire_split_regions)) NULL else {fire_split_regions}
   
   filter <- list(metadata.location_id=location_id,
                  metadata.duration_hour=duration_hour,
@@ -171,14 +172,14 @@ db.find_weather <- function(location_id, met_type=NULL, height=NULL, duration_ho
                    metadata.met_type=met_type,
                    metadata.buffer_km=buffer_km,
                    metadata.fire_source=fire_source,
-                   metadata.fire_split=fire_split)
+                   metadata.fire_split_regions=fire_split_regions)
 
   filter <- filter[!unlist(lapply(filter, is.null))]
   fs$find(jsonlite::toJSON(filter,auto_unbox=T))
 }
 
 
-db.find_meas <- function(location_id, met_type=NULL, height=NULL, duration_hour=NULL, hours=NULL, buffer_km=NULL, fire_source=NULL, fire_split=NULL){
+db.find_meas <- function(location_id, met_type=NULL, height=NULL, duration_hour=NULL, hours=NULL, buffer_km=NULL, fire_source=NULL, fire_split_regions=NULL){
   fs <- db.get_gridfs_meas()
   
   hours <- if(is.null(hours) || is.na(hours)) NULL else {paste0(hours, collapse=',')}
@@ -191,27 +192,27 @@ db.find_meas <- function(location_id, met_type=NULL, height=NULL, duration_hour=
                  metadata.met_type=met_type,
                  metadata.buffer_km=buffer_km,
                  metadata.fire_source=fire_source,
-                 metadata.fire_split=fire_split)
+                 metadata.fire_split_regions=fire_split_regions)
   
   filter <- filter[!unlist(lapply(filter, is.null))]
   fs$find(jsonlite::toJSON(filter,auto_unbox=T))
 }
 
 
-db.remove_weather <- function(location_id, met_type=NULL, height=NULL, duration_hour=NULL, hours=NULL, buffer_km=NULL, fire_source=NULL, fire_split=NULL){
+db.remove_weather <- function(location_id, met_type=NULL, height=NULL, duration_hour=NULL, hours=NULL, buffer_km=NULL, fire_source=NULL, fire_split_regions=NULL){
   fs <- db.get_gridfs_weather()
   found <- db.find_weather(location_id=location_id, met_type=met_type, height=height, duration_hour=duration_hour, hours=hours,
-                           fire_source=fire_source, buffer_km=buffer_km, fire_split=fire_split)
+                           fire_source=fire_source, buffer_km=buffer_km, fire_split_regions=fire_split_regions)
 
   if(nrow(found)>0) fs$remove(paste0("id:", found$id))
   print(sprintf("%d row(s) removed", nrow(found)))
 }
 
 
-db.download_weather <- function(location_id=NULL, met_type=NULL, height=NULL, duration_hour=NULL, hours=NULL, buffer_km=NULL, fire_source=NULL, fire_split=NULL){
+db.download_weather <- function(location_id=NULL, met_type=NULL, height=NULL, duration_hour=NULL, hours=NULL, buffer_km=NULL, fire_source=NULL, fire_split_regions=NULL){
   fs <- db.get_gridfs_weather()
   found <- db.find_weather(location_id=location_id, met_type=met_type, height=height, duration_hour=duration_hour, hours=hours,
-                         fire_source=fire_source, buffer_km=buffer_km, fire_split=fire_split)
+                         fire_source=fire_source, buffer_km=buffer_km, fire_split_regions=fire_split_regions)
 
   if(nrow(found)==0) return(NULL)
 
@@ -237,10 +238,10 @@ db.download_weather <- function(location_id=NULL, met_type=NULL, height=NULL, du
 }
 
 
-db.download_meas <- function(location_id=NULL, met_type=NULL, height=NULL, duration_hour=NULL, hours=NULL, buffer_km=NULL, fire_source=NULL, fire_split=NULL){
+db.download_meas <- function(location_id=NULL, met_type=NULL, height=NULL, duration_hour=NULL, hours=NULL, buffer_km=NULL, fire_source=NULL, fire_split_regions=NULL){
   fs <- db.get_gridfs_meas()
   found <- db.find_meas(location_id=location_id, met_type=met_type, height=height, duration_hour=duration_hour, hours=hours,
-                           fire_source=fire_source, buffer_km=buffer_km, fire_split=fire_split)
+                           fire_source=fire_source, buffer_km=buffer_km, fire_split_regions=fire_split_regions)
   
   if(nrow(found)==0) return(NULL)
   
@@ -314,7 +315,7 @@ db.upload_filecached <- function(){
     files$height <- as.numeric(gsub("m","",files$height))
     files$buffer_km <- as.numeric(gsub("km","",files$buffer_km))
     files$size <- file.info(files$path)$size
-    files$fire_split <- NULL
+    files$fire_split_regions <- NULL
     files <- files %>% filter(size > 300)
     files$met_type <- "gdas1"
     return(files)
@@ -335,7 +336,7 @@ db.upload_filecached <- function(){
                     duration_hour=f$duration_hour,
                     fire_source=f$fire_source,
                     buffer_km=f$buffer_km,
-                    fire_split = NULL
+                    fire_split_regions = NULL
                     )
   }
   
@@ -349,7 +350,7 @@ db.upload_filecached <- function(){
                       duration_hour=f$duration_hour,
                       fire_source=f$fire_source,
                       buffer_km=f$buffer_km,
-                      fire_split = NULL
+                   fire_split_regions = NULL
     )
   }
 }

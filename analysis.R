@@ -49,7 +49,8 @@ m.plot <- m.dew %>%
   tidyr::unnest(normalised) %>%
   mutate(date=lubridate::date(date)) %>%
   mutate(yday=stringr::str_detect(output,"yday")) %>%
-  left_join(m %>% mutate(date=lubridate::date(date)) %>%
+  left_join(m %>%
+              mutate(date=lubridate::date(date)) %>%
               select(location_id, date, observed=value),
             by=c("location_id","date")) %>%
   tidyr::gather("type","value", observed, predicted, predicted_nofire) %>%
