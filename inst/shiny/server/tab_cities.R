@@ -25,209 +25,50 @@ trajs_add_log <- function(message){
 
 # Not refreshing for every intermediate step
 # when sliding date
-trajs_date <- reactive({
-  input$trajs_date
-}) %>% debounce(1000)
-
-
-available <- reactive({
-  db.available_weather()
-})
-
-
-locations <- reactive({
-  req(available())
-  rcrea::locations(id=unique(available()$location_id),
-                   level=c("station","city"),
-                   with_metadata=F,
-                   with_geometry=T) %>%
-    dplyr::distinct(id, name, country, geometry)
-})
-
-
-location_id <- reactive({
-  req(input$tableConfigs_rows_selected)
-  available()[input$tableConfigs_rows_selected,]$location_id
-})
-
-
-selected_metadata <- reactive({
-  req(input$tableConfigs_rows_selected)
-  as.list(available()[input$tableConfigs_rows_selected,])
-})
-
-available_location <- reactive({
-  req(available())
-  req(location_id())
-
-  available() %>%
-    filter(location_id==location_id())
-})
-
-
-location_geometry <- reactive({
-  locations() %>%
-    dplyr::filter(id==location_id()) %>%
-    dplyr::distinct(geometry) %>%
-    dplyr::pull(geometry)
-})
-
-
-weather <- reactive({
-  req(selected_metadata())
-  m <- selected_metadata()
-  # req(input$trajs_buffer)
-  # req(input$trajs_duration)
-  # req(input$firesource)
-
-  
-  w <- db.download_weather(
-    location_id=m$location_id,
-    met_type=m$met_type,
-    # height=m$height,
-    buffer_km=m$buffer_km,
-    duration_hour=m$duration_hour,
-    hours=m$hours,
-    fire_source=m$firesource
-  ) %>%
-    filter((height==m$height) | (is.na(m$height) & is.na(height)))
-  
-  if(is.null(w)){
-    return(NULL)
-  }
-  w %>%
-    select(weather) %>% 
-    tidyr::unnest(weather)
-})
-
-
-meas <- reactive({
-  req(selected_metadata())
-  m <- selected_metadata()
-  
-  meas <- db.download_meas(
-    location_id=m$location_id,
-    met_type=m$met_type,
-    height=NULL,
-    buffer_km=m$buffer_km,
-    duration_hour=m$duration_hour,
-    hours=m$hours,
-    fire_source=m$firesource
-  ) %>%
-    filter((height==m$height) | (is.na(m$height) & is.na(height)))
-  
-  if(!is.null(meas)){
-    return(
-      meas %>%
-        select(meas) %>%
-        tidyr::unnest(meas)
-    )
-  }else{
-    return(NULL)
-  }
-    
-})
-
-
-trajs_dates <- reactive({
-  req(selected_metadata())
-  m <- selected_metadata()
-  
-  creatrajs::db.available_dates(
-    location_id=m$location_id,
-    duration_hour=as.numeric(m$duration_hour),
-    met_type=m$met_type,
-    height=NULL, #m$height
-  ) %>%
-    sort(decreasing=T)
-})
-
-
-trajs_durations <- reactive({
-  req(available_location())
-
-  available_location() %>%
-    pull(duration_hour) %>%
-    unique()
-})
-
-
-trajs_buffers <- reactive({
-  req(available_location())
-  
-  available_location() %>%
-    pull(buffer_km) %>%
-    unique()
-})
-
-
-firesources <- reactive({
-  req(available_location())
-  
-  available_location() %>%
-    pull(fire_source) %>%
-    unique() %>%
-    tidyr::replace_na("NA")
-})
-
-
-polls <- reactive({
-  req(meas())
-  
-  polls <- unique(meas()$poll)
-  names(polls) <- rcrea::poll_str(polls)
-  return(polls)
-})
-
-
-trajs_meas_date <- reactive({
-
-  req(meas())
-  req(trajs_date())
-
-  meas() %>%
-    dplyr::filter(date==trajs_date())
-
-})
-
-
-trajs_points <- reactive({
-  
-  req(selected_metadata())
-  req(trajs_date())
-  m <- selected_metadata()
-  
-  trajs <- creatrajs::db.download_trajs(
-    location_id=m$location_id,
-    met_type=m$met_type,
-    height=m$height,
-    date=as.Date(trajs_date()),
-    duration_hour=m$duration_hour,
-    hours=m$hours
-  )
-  
-  if(is.null(trajs)){
-    return(NULL)
-  }
-  
-  trajs %>%
-    tidyr::unnest(trajs, names_sep=".") %>%
-    dplyr::select(date=trajs.traj_dt, lon=trajs.lon, lat=trajs.lat, run=trajs.run)
-})
 
 
 # Output Elements --------------------------------------
-output$tableConfigs <- renderDT({
+
+output$selectInputConfig <- renderUI({
+  
   req(available())
-  datatable(available(),
+  req(input$city)
+  
+  row_to_str <- function(row){
+    lst=as.list(row); paste0(sprintf("%s=%s", names(lst), unlist(lst)), collapse="|\t")
+  }
+  
+  d <- available() %>%
+    mutate(idx=row_number()) %>% # used to retrieve associated metadata
+    filter(location_id==input$city) %>%
+    select(-c(location_id, location_name, country, fire_split))
+  
+  choices <- apply(d %>% select(-idx), 1, row_to_str)
+  pickerInput("config","Configuration", choices=`names<-`(d$idx, choices),
+              options = list(`actions-box` = F), multiple = F)
+})
+
+
+output$tableConfigs <- renderDT({
+  
+  req(available())
+  req(input$city)
+  
+  data <- available() %>%
+    distinct(location_id, .keep_all = T) %>%
+    filter(location_id==input$city) %>%
+    select(-c(location_id, location_name, country))
+  
+  datatable(data,
             rownames = FALSE,
             options = list(
-              dom = 'ft',
+              dom = 't',
               autoWidth = TRUE,
               lengthChange = FALSE,
               deferRender = TRUE,
               scrollY = 200,
-              scroller = TRUE
+              scroller = TRUE,
+              ordering=F
             ),
             selection='single',
             extensions = c('Scroller', 'Responsive'),
@@ -247,7 +88,8 @@ output$selectInputRunning <- renderUI({
     "None"=0,
     "One week (7)"=7,
     "Two weeks (14)"=14,
-    "One month (31)"=31)
+    "One month (31)"=31,
+    "One year (365)"=365)
   
   pickerInput("running_width", "Running average", choices=windows, selected=c(7),
               options = list(`actions-box` = F), multiple = F)
@@ -267,25 +109,29 @@ output$selectInputRunning <- renderUI({
   # )
 })
 
-# 
-# output$selectInputCountry <- renderUI({
-# 
-#   countries <- locations()$country %>% unique()
-#   names(countries) = unlist(countrycode(countries, origin='iso2c', destination='country.name',
-#                                         custom_match = list(XK='Kosovo')))
-# 
-#   pickerInput("country","Country", choices=countries, options = list(`actions-box` = TRUE), multiple = F)
-# })
-# 
-# 
-# output$selectInputCity <- renderUI({
-#   req(input$country)
-#   cities <- locations() %>%
-#     dplyr::filter(country==input$country) %>%
-#     dplyr::pull(name) %>%
-#     unique()
-#   pickerInput("city","City", choices=cities, options = list(`actions-box` = TRUE), multiple = F)
-# })
+
+output$selectInputCountry <- renderUI({
+  req(available())
+  countries <- unique(available()$country)
+  names(countries) = unlist(countrycode(countries, origin='iso2c', destination='country.name',
+                                        custom_match = list(XK='Kosovo')))
+
+  pickerInput("country","Country", choices=countries, options = list(`actions-box` = TRUE), multiple = F)
+})
+
+
+
+output$selectInputCity <- renderUI({
+  req(available())
+  req(input$country)
+  
+  cities <- available() %>%
+    filter(country==input$country) %>%
+    select(location_name, location_id) %>%
+    tibble::deframe()
+  
+  pickerInput("city","City", choices=cities, options = list(`actions-box` = TRUE), multiple = F)
+})
 
 
 output$selectInputDuration <- renderUI({

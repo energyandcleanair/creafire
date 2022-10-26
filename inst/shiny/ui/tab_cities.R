@@ -35,18 +35,19 @@ tabPanel("Trajectories",
              #   style="height: 30px",
              #   id="mode"
              # ),
-             
              div(
-               DTOutput('tableConfigs'),
+               class="row-inline",
+               height=50,
+               uiOutput("selectInputCountry") %>% withSpinner(color="#8cc9D0"),
+               uiOutput("selectInputCity"),
                style="flex: 0 1 auto;"
-               
              ),
-             # div(
-             #   class="row-inline",
-             #   height=50,
-             #   uiOutput("selectInputCountry") %>% withSpinner(color="#8cc9D0"),
-             #   uiOutput("selectInputCity")
-             # ),
+             div(
+               # DTOutput('tableConfigs'),
+               uiOutput("selectInputConfig"),
+               style="flex: 0 1 auto;"
+             ),
+
              # conditionalPanel(
              #   condition = "input.cities_mode == 'map'",
              #   div(
@@ -77,7 +78,7 @@ tabPanel("Trajectories",
              # conditionalPanel(
                # condition = "input.cities_mode == 'map'",
              div(
-               plotlyOutput("sidePlots", height="100%")  %>% withSpinner(color="#8cc9D0"),
+               plotlyOutput("sidePlots", height="100%"),
                style="flex: 1 1 auto;"  
              )
              

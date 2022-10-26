@@ -22,7 +22,8 @@ server <- function(input, output, session) {
         }
     })
 
-
+    source(file.path("server", "reactive.R"),  local = TRUE)$value
+  
     # Tab 1: Trajectories              -----------------------------------------------------
     source(file.path("server", "tab_cities.R"),  local = TRUE)$value
     source(file.path("server", "tab_cities_plots.R"),  local = TRUE)$value
