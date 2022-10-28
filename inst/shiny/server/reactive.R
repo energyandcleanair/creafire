@@ -26,8 +26,8 @@ locations <- reactive({
 
 
 location_id <- reactive({
-  req(input$tableConfigs_rows_selected)
-  available()[input$tableConfigs_rows_selected,]$location_id
+  req(selected_metadata())
+  selected_metadata()$location_id
 })
 
 
@@ -37,7 +37,6 @@ selected_metadata <- reactive({
   
   # as.list(available()[input$tableConfigs_rows_selected,])
   as.list(available()[as.numeric(input$config),])
-  
 })
 
 available_location <- reactive({

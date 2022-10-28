@@ -41,7 +41,7 @@ output$selectInputConfig <- renderUI({
   d <- available() %>%
     mutate(idx=row_number()) %>% # used to retrieve associated metadata
     filter(location_id==input$city) %>%
-    select(-c(location_id, location_name, country, fire_split))
+    select(-c(location_id, location_name, country))
   
   choices <- apply(d %>% select(-idx), 1, row_to_str)
   pickerInput("config","Configuration", choices=`names<-`(d$idx, choices),
