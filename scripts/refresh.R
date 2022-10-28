@@ -29,11 +29,12 @@ config_india <- tibble(
   poll=list(c("pm25","pm10")),
   level='city',
   process_id='city_day_mad',
-  duration_hour=120,
-  buffer_km=50,
-  height=10,
-  date_from="2016-01-01",
-  fire_source="viirs")
+  # duration_hour=120,
+  # buffer_km=50,
+  # height=10,
+  # date_from="2016-01-01",
+  # fire_source="viirs"
+  )
 
 config_pakistan <- tibble(
   city=c("Lahore","Islamabad"),
@@ -41,11 +42,12 @@ config_pakistan <- tibble(
   poll=list(c("pm25")),
   level='city',
   process_id='city_day_mad',
-  duration_hour=120,
-  buffer_km=50,
-  height=10,
-  date_from="2016-01-01",
-  fire_source="viirs")
+  # duration_hour=120,
+  # buffer_km=50,
+  # height=10,
+  # date_from="2016-01-01",
+  # fire_source="viirs"
+  )
 
 
 config_thailand <- tibble(
@@ -54,11 +56,12 @@ config_thailand <- tibble(
   poll=list(c("pm25")),
   level='city',
   process_id='city_day_mad',
-  duration_hour=120,
-  buffer_km=50,
-  height=10,
-  date_from="2016-01-01",
-  fire_source="viirs")
+  # duration_hour=120,
+  # buffer_km=50,
+  # height=10,
+  # date_from="2016-01-01",
+  # fire_source="viirs"
+  )
 
 config_malaysia <- tibble(
   city=c("Kuala Lumpur"),
@@ -66,11 +69,12 @@ config_malaysia <- tibble(
   poll=list(c("pm25")),
   level='city',
   process_id='city_day_mad',
-  duration_hour=120,
-  buffer_km=50,
-  height=10,
-  date_from="2016-01-01",
-  fire_source="viirs")
+  # duration_hour=120,
+  # buffer_km=50,
+  # height=10,
+  # date_from="2016-01-01",
+  # fire_source="viirs"
+  )
 
 
 configs <- bind_rows(
@@ -85,25 +89,31 @@ print(configs)
 lapply(seq(nrow(configs)),
        function(i){
          c <- configs[i,]
-         defire(city=c$city,
+         creadeweather::deweather(city=c$city,
                 level=c$level,
                 poll=c$poll[[1]],
                 source=c$source,
                 process_id=c$process_id,
-                duration_hour=c$duration_hour,
-                fire_source=c$fire_source,
-                buffer_km=c$buffer_km,
-                date_from=c$date_from,
-                height=c$height,
+                # duration_hour=c$duration_hour,
+                # fire_source=c$fire_source,
+                # buffer_km=c$buffer_km,
+                # date_from=c$date_from,
+                # height=c$height,
                 upload_folder = "upload",
-                force_recompute_weather=F)
+                force_recompute_weather=F,
+                upload_results = T,
+                upload_fire = T,
+                add_fire = T,
+                output=c('trend'),
+                weather_vars=c('air_temp_min','air_temp_max', 'atmos_pres', 'wd', 'ws_max', 'precip', 'RH_max'),
+                )
        })
 
 
 # Also deweather data for darhboard
-deweather(city=unique(configs$city),
-          source=unique(configs$source),
-          poll=unique(unlist(configs$poll)))
+# deweather(city=unique(configs$city),
+#           source=unique(configs$source),
+#           poll=unique(unlist(configs$poll)))
 
 
 # And calculate regional fires!
