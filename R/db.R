@@ -85,6 +85,7 @@ db.setup_db <- function(){
 
 db.upload_weather <- function(weather,
                               location_id,
+                              location_name,
                               met_type,
                               height,
                               duration_hour,
@@ -102,6 +103,7 @@ db.upload_weather <- function(weather,
   height <- if(is.null(height) || is.na(height)) NULL else {height}
   
   metadata <- list(location_id=location_id,
+                   location_name=location_name,
                    duration_hour=duration_hour,
                    hours=hours,
                    height=height,
@@ -266,6 +268,25 @@ db.download_meas <- function(location_id=NULL, met_type=NULL, height=NULL, durat
   tibble(result)
 }
 
+
+db.add_location_name <- function(){
+  
+  fs <- db.get_gridfs_weather()
+  col <- db.get_collection('weather.files')
+  found <- fs$find('{}')
+  
+  location_ids <- lapply(found$metadata, function(x) jsonlite::fromJSON(x)$location_id) %>%
+    unlist() %>%
+    unique()
+  
+  lapply(location_ids, function(location_id){
+    location_name <- rcrea::cities(id=location_id)$name
+    col$update(
+      query = sprintf('{"metadata.location_id": "%s"}',location_id),
+      update = sprintf('{ "$set" : { "metadata.location_name" : "%s"} }', location_name)
+    )  
+  })
+}
 
 
 db.clean <- function(){
