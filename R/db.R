@@ -85,7 +85,7 @@ db.setup_db <- function(){
 
 db.upload_weather <- function(weather,
                               location_id,
-                              location_name,
+                              location_name=NULL,
                               met_type,
                               height,
                               duration_hour,
@@ -101,6 +101,9 @@ db.upload_weather <- function(weather,
 
   hours <- if(is.null(hours) || is.na(hours)) NULL else {paste0(hours, collapse=',')}
   height <- if(is.null(height) || is.na(height)) NULL else {height}
+  location_name <- if(is.null(location_name)){
+    rcrea::cities(id=location_id) %>% pull(name) %>% head(1)
+  }else{location_name}
   
   metadata <- list(location_id=location_id,
                    location_name=location_name,
