@@ -99,7 +99,7 @@ db.upload_weather <- function(weather,
   filepath <- file.path(tmpdir, "weather.RDS")
   saveRDS(weather, filepath)
 
-  hours <- if(is.null(hours) || is.na(hours)) NULL else {paste0(hours, collapse=',')}
+  hours <- if(all(is.null(hours)) || all(is.na(hours))) NULL else {paste0(hours, collapse=',')}
   height <- if(is.null(height) || is.na(height)) NULL else {height}
   location_name <- if(is.null(location_name)){
     rcrea::cities(id=location_id) %>% pull(name) %>% head(1)
@@ -136,7 +136,7 @@ db.upload_meas <- function(meas, location_id, met_type, height, duration_hour, h
   filepath <- file.path(tmpdir, "meas.RDS")
   saveRDS(meas, filepath)
 
-  hours <- if(is.null(hours) || is.na(hours)) NULL else {paste0(hours, collapse=',')}
+  hours <- if(all(is.null(hours)) || all(is.na(hours))) NULL else {paste0(hours, collapse=',')}
   height <- if(is.null(height) || is.na(height)) NULL else {height}
   
   metadata <- list(location_id=location_id,
@@ -166,7 +166,7 @@ db.upload_meas <- function(meas, location_id, met_type, height, duration_hour, h
 db.find_weather <- function(location_id, met_type=NULL, height=NULL, duration_hour=NULL, hours=NULL, buffer_km=NULL, fire_source=NULL, fire_split_regions=NULL){
   fs <- db.get_gridfs_weather()
 
-  hours <- if(is.null(hours) || is.na(hours)) NULL else {paste0(hours, collapse=',')}
+  hours <- if(all(is.null(hours)) || all(is.na(hours))) NULL else {paste0(hours, collapse=',')}
   height <- if(is.null(height) || is.na(height)) NULL else {height}
   fire_split_regions <- if(is.null(fire_split_regions) || is.na(fire_split_regions)) NULL else {fire_split_regions}
   
@@ -187,7 +187,7 @@ db.find_weather <- function(location_id, met_type=NULL, height=NULL, duration_ho
 db.find_meas <- function(location_id, met_type=NULL, height=NULL, duration_hour=NULL, hours=NULL, buffer_km=NULL, fire_source=NULL, fire_split_regions=NULL){
   fs <- db.get_gridfs_meas()
   
-  hours <- if(is.null(hours) || is.na(hours)) NULL else {paste0(hours, collapse=',')}
+  hours <- if(all(is.null(hours)) || all(is.na(hours))) NULL else {paste0(hours, collapse=',')}
   height <- if(is.null(height) || is.na(height)) NULL else {height}
   
   filter <- list(metadata.location_id=location_id,
