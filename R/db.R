@@ -92,7 +92,7 @@ db.upload_weather <- function(weather,
                               buffer_km,
                               hours,
                               fire_source,
-                              fire_split_regions=NULL){
+                              fire_split_regions=NO_SPLIT_REGION){
   
   fs <- db.get_gridfs_weather()
   tmpdir <- tempdir()
@@ -168,16 +168,16 @@ db.find_weather <- function(location_id, met_type=NULL, height=NULL, duration_ho
 
   hours <- if(all(is.null(hours)) || all(is.na(hours))) NULL else {paste0(hours, collapse=',')}
   height <- if(is.null(height) || is.na(height)) NULL else {height}
-  fire_split_regions <- if(is.null(fire_split_regions) || is.na(fire_split_regions)) NULL else {fire_split_regions}
+  fire_split_regions <- if(is.null(fire_split_regions) || is.na(fire_split_regions)) NO_SPLIT_REGION else {fire_split_regions}
   
   filter <- list(metadata.location_id=location_id,
                  metadata.duration_hour=duration_hour,
                  metadata.hours=hours,
-                   metadata.height=height,
-                   metadata.met_type=met_type,
-                   metadata.buffer_km=buffer_km,
-                   metadata.fire_source=fire_source,
-                   metadata.fire_split_regions=fire_split_regions)
+                 metadata.height=height,
+                 metadata.met_type=met_type,
+                 metadata.buffer_km=buffer_km,
+                 metadata.fire_source=fire_source,
+                 metadata.fire_split_regions=fire_split_regions)
 
   filter <- filter[!unlist(lapply(filter, is.null))]
   fs$find(jsonlite::toJSON(filter,auto_unbox=T))
@@ -289,6 +289,17 @@ db.add_location_name <- function(){
       update = sprintf('{ "$set" : { "metadata.location_name" : "%s"} }', location_name)
     )  
   })
+}
+
+
+db.add_split_regions <- function(){
+  
+  fs <- db.get_gridfs_weather()
+  col <- db.get_collection('weather.files')
+  col$update(
+    query = sprintf('{"metadata.fire_split_regions": {}}'),
+    update = sprintf('{ "$set" : { "metadata.fire_split_regions" : "%s"} }', NO_SPLIT_REGION)
+  )  
 }
 
 
