@@ -130,7 +130,7 @@ db.upload_weather <- function(weather,
 }
 
 
-db.upload_meas <- function(meas, location_id, met_type, height, duration_hour, hours, buffer_km, fire_source, fire_split_regions=NULL){
+db.upload_meas <- function(meas, location_id, met_type, height, duration_hour, hours, buffer_km, fire_source, fire_split_regions=NO_SPLIT_REGION){
   fs <- db.get_gridfs_meas()
   tmpdir <- tempdir()
   filepath <- file.path(tmpdir, "meas.RDS")
@@ -168,7 +168,7 @@ db.find_weather <- function(location_id, met_type=NULL, height=NULL, duration_ho
 
   hours <- if(all(is.null(hours)) || all(is.na(hours))) NULL else {paste0(hours, collapse=',')}
   height <- if(is.null(height) || is.na(height)) NULL else {height}
-  fire_split_regions <- if(is.null(fire_split_regions) || is.na(fire_split_regions)) NULL else {fire_split_regions}
+  fire_split_regions <- if(is.null(fire_split_regions) || is.na(fire_split_regions)) NO_SPLIT_REGION else {fire_split_regions}
   
   filter <- list(metadata.location_id=location_id,
                  metadata.duration_hour=duration_hour,
@@ -184,7 +184,14 @@ db.find_weather <- function(location_id, met_type=NULL, height=NULL, duration_ho
 }
 
 
-db.find_meas <- function(location_id, met_type=NULL, height=NULL, duration_hour=NULL, hours=NULL, buffer_km=NULL, fire_source=NULL, fire_split_regions=NULL){
+db.find_meas <- function(location_id,
+                         met_type=NULL,
+                         height=NULL,
+                         duration_hour=NULL,
+                         hours=NULL,
+                         buffer_km=NULL,
+                         fire_source=NULL,
+                         fire_split_regions=NULL){
   fs <- db.get_gridfs_meas()
   
   hours <- if(all(is.null(hours)) || all(is.na(hours))) NULL else {paste0(hours, collapse=',')}
@@ -300,6 +307,13 @@ db.add_split_regions <- function(){
     query = sprintf('{"metadata.fire_split_regions": {}}'),
     update = sprintf('{ "$set" : { "metadata.fire_split_regions" : "%s"} }', NO_SPLIT_REGION)
   )  
+  
+  fs <- db.get_gridfs_meas()
+  col <- db.get_collection('meas.files')
+  col$update(
+    query = sprintf('{"metadata.fire_split_regions": null}'),
+    update = sprintf('{ "$set" : { "metadata.fire_split_regions" : "%s"} }', NO_SPLIT_REGION)
+  )  
 }
 
 
@@ -312,10 +326,13 @@ db.clean <- function(){
   
   fs <- db.get_gridfs_meas()
   
+  # Remove those that don't have process_id
   found <- fs$find('{}')
   empty <- found[found$size==0,]
   if(nrow(empty)>0) fs$remove(paste0("id:", empty$id))
   
+  # old <- found[found$date < "2023-10-01",]
+  # fs$remove(paste0("id:", old$id))
 }
 
 #' Upload weather and meas cached using previous system (i.e. on disk)
