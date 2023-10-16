@@ -293,7 +293,8 @@ db.add_location_name <- function(){
     location_name <- rcrea::cities(id=location_id)$name
     col$update(
       query = sprintf('{"metadata.location_id": "%s"}',location_id),
-      update = sprintf('{ "$set" : { "metadata.location_name" : "%s"} }', location_name)
+      update = sprintf('{ "$set" : { "metadata.location_name" : "%s"} }', location_name),
+      multiple=T
     )  
   })
 }
@@ -305,15 +306,19 @@ db.add_split_regions <- function(){
   col <- db.get_collection('weather.files')
   col$update(
     query = sprintf('{"metadata.fire_split_regions": {}}'),
-    update = sprintf('{ "$set" : { "metadata.fire_split_regions" : "%s"} }', NO_SPLIT_REGION)
+    update = sprintf('{ "$set" : { "metadata.fire_split_regions" : "%s"} }', NO_SPLIT_REGION),
+    multiple=T
   )  
   
   fs <- db.get_gridfs_meas()
   col <- db.get_collection('meas.files')
+  
   col$update(
-    query = sprintf('{"metadata.fire_split_regions": null}'),
-    update = sprintf('{ "$set" : { "metadata.fire_split_regions" : "%s"} }', NO_SPLIT_REGION)
+    query = sprintf('{"metadata.fire_split_regions": {  }}'),
+    update = sprintf('{ "$set" : { "metadata.fire_split_regions" : "%s"} }', NO_SPLIT_REGION),
+    multiple=T
   )  
+  
 }
 
 
