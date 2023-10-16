@@ -168,7 +168,7 @@ db.find_weather <- function(location_id, met_type=NULL, height=NULL, duration_ho
 
   hours <- if(all(is.null(hours)) || all(is.na(hours))) NULL else {paste0(hours, collapse=',')}
   height <- if(is.null(height) || is.na(height)) NULL else {height}
-  fire_split_regions <- if(is.null(fire_split_regions) || is.na(fire_split_regions)) NO_SPLIT_REGION else {fire_split_regions}
+  fire_split_regions <- if(is.null(fire_split_regions) || is.na(fire_split_regions)) NULL else {fire_split_regions}
   
   filter <- list(metadata.location_id=location_id,
                  metadata.duration_hour=duration_hour,
