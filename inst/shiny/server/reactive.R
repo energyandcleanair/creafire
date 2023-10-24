@@ -6,7 +6,7 @@ trajs_date <- reactive({
 available <- reactive({
   w <- db.available_weather()
   
-  locations <- rcrea::locations(id=w$location_id) %>%
+  locations <- rcrea::locations(id=w$location_id, with_source = F) %>%
     distinct(id, .keep_all = T)
   
   w %>%
@@ -19,6 +19,7 @@ locations <- reactive({
   req(available())
   rcrea::locations(id=unique(available()$location_id),
                    level=c("station","city"),
+                   with_source=F,
                    with_metadata=F,
                    with_geometry=T) %>%
     dplyr::distinct(id, name, country, geometry)
@@ -71,7 +72,8 @@ weather <- reactive({
     buffer_km=m$buffer_km,
     duration_hour=m$duration_hour,
     hours=m$hours,
-    fire_source=m$firesource
+    fire_source=m$firesource,
+    fire_split_regions = m$fire_split_regions
   ) %>%
     filter((height==m$height) | (is.na(m$height) & is.na(height)))
   
@@ -95,7 +97,8 @@ meas <- reactive({
     buffer_km=m$buffer_km,
     duration_hour=m$duration_hour,
     hours=m$hours,
-    fire_source=m$firesource
+    fire_source=m$firesource,
+    fire_split_regions = m$fire_split_regions
   ) %>%
     filter((height==m$height) | (is.na(m$height) & is.na(height)))
   

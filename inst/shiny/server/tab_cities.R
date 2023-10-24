@@ -127,7 +127,7 @@ output$selectInputCity <- renderUI({
   
   cities <- available() %>%
     filter(country==input$country) %>%
-    select(location_name, location_id) %>%
+    distinct(location_name, location_id) %>%
     tibble::deframe()
   
   pickerInput("city","City", choices=cities, options = list(`actions-box` = TRUE), multiple = F)
@@ -205,7 +205,7 @@ output$trajsInfos <- renderUI({
   HTML(paste0("<b>",l$name," - ",d[["poll"]],"</b><br/>",
               trajs_date(),"<br/>",
               # "Observed: ", round(d[["observed"]]), " ",d[["unit"]], "<br/>",
-              "Predicted: ", round(d[["predicted"]]), " ",d[["unit"]], "<br/>",
+              # "Predicted: ", round(d[["predicted"]]), " ",d[["unit"]], "<br/>",
               "Predicted (nofire): ", round(d[["predicted_nofire"]]), " ",d[["unit"]], "<br/>"
   ))
 })
