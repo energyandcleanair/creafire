@@ -4,10 +4,10 @@
 
 output$plots <- renderPlotly({
 
-  req(plot_fire_count())
-  req(plot_fire_contribution())
-  req(plot_fire_frp())
-  req(plot_poll())
+  # req(plot_fire_count())
+  # req(plot_fire_contribution())
+  # req(plot_fire_frp())
+  # req(plot_poll())
   
   # req(input$plots)
 
@@ -17,6 +17,10 @@ output$plots <- renderPlotly({
     plot_fire_count(),
     plot_fire_frp()
     )
+  
+  plots <- plots[!is.na(plots)]
+  plots <- plots[!unlist(lapply(plots, is.null))]
+  
 
   plotly::subplot(plots,
                   nrows = length(plots),

@@ -31,32 +31,31 @@ trajs_add_log <- function(message){
 
 output$selectInputConfig <- renderUI({
   
-  req(available())
-  req(input$city)
+  req(available_at_location())
+  req(location_id())
   
   row_to_str <- function(row){
     lst=as.list(row); paste0(sprintf("%s=%s", names(lst), unlist(lst)), collapse="|\t")
   }
   
-  d <- available() %>%
+  d <- available_at_location() %>%
     mutate(idx=row_number()) %>% # used to retrieve associated metadata
-    filter(location_id==input$city) %>%
+    filter(location_id==location_id()) %>%
     select(-c(location_id, location_name, country))
   
   choices <- apply(d %>% select(-idx), 1, row_to_str)
-  pickerInput("config","Configuration", choices=`names<-`(d$idx, choices),
+  pickerInput("config","Configuration",
+              choices=`names<-`(d$idx, choices),
               options = list(`actions-box` = F), multiple = F)
 })
 
 
 output$tableConfigs <- renderDT({
   
-  req(available())
-  req(input$city)
+  req(available_at_location())
   
-  data <- available() %>%
+  data <- available_at_location() %>%
     distinct(location_id, .keep_all = T) %>%
-    filter(location_id==input$city) %>%
     select(-c(location_id, location_name, country))
   
   datatable(data,

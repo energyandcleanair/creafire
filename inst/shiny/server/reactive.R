@@ -27,20 +27,27 @@ locations <- reactive({
 
 
 location_id <- reactive({
-  req(selected_metadata())
-  selected_metadata()$location_id
+  req(input$city)
+  input$city
+  # req(selected_metadata())
+  # m <- selected_metadata()
+  # 
+  # if(is.null(m) || length(m)==0){
+  #   return(NULL)
+  # }
+  # 
+  # m$location_id
 })
 
 
 selected_metadata <- reactive({
-  # req(input$tableConfigs_rows_selected)
   req(input$config)
+  req(available_at_location())
   
-  # as.list(available()[input$tableConfigs_rows_selected,])
-  as.list(available()[as.numeric(input$config),])
+  as.list(available_at_location()[as.numeric(input$config),])
 })
 
-available_location <- reactive({
+available_at_location <- reactive({
   req(available())
   req(location_id())
   
@@ -50,6 +57,8 @@ available_location <- reactive({
 
 
 location_geometry <- reactive({
+  req(locations())
+  req(location_id())
   locations() %>%
     dplyr::filter(id==location_id()) %>%
     dplyr::distinct(geometry) %>%
@@ -60,10 +69,10 @@ location_geometry <- reactive({
 weather <- reactive({
   req(selected_metadata())
   m <- selected_metadata()
-  # req(input$trajs_buffer)
-  # req(input$trajs_duration)
-  # req(input$firesource)
   
+  if(is.null(m) || length(m)==0){
+    return(NULL)
+  }
   
   w <- db.download_weather(
     location_id=m$location_id,
@@ -90,6 +99,10 @@ meas <- reactive({
   req(selected_metadata())
   m <- selected_metadata()
   
+  if(is.null(m) || length(m)==0){
+    return(NULL)
+  }
+  
   meas <- db.download_meas(
     location_id=m$location_id,
     met_type=m$met_type,
@@ -99,12 +112,12 @@ meas <- reactive({
     hours=m$hours,
     fire_source=m$firesource,
     fire_split_regions = m$fire_split_regions
-  ) %>%
-    filter((height==m$height) | (is.na(m$height) & is.na(height)))
+  )
   
   if(!is.null(meas)){
     return(
       meas %>%
+        filter((height==m$height) | (is.na(m$height) & is.na(height))) %>%
         select(meas) %>%
         tidyr::unnest(meas)
     )
@@ -118,6 +131,10 @@ meas <- reactive({
 trajs_dates <- reactive({
   req(selected_metadata())
   m <- selected_metadata()
+  
+  if(is.null(m) || length(m)==0){
+    return(NULL)
+  }
   
   creatrajs::db.available_dates(
     location_id=m$location_id,
@@ -182,6 +199,10 @@ trajs_points <- reactive({
   req(selected_metadata())
   req(trajs_date())
   m <- selected_metadata()
+  
+  if(is.null(m) || length(m)==0){
+    return(NULL)
+  }
   
   trajs <- creatrajs::db.download_trajs(
     location_id=m$location_id,

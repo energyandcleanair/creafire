@@ -13,19 +13,20 @@ output$selectInputSidePlots <- renderUI({
 
 output$sidePlots <- renderPlotly({
 
-  req(side_plot_poll())
-  req(side_plot_fire())
-  req(side_plot_firecontribution())
+  # req(side_plot_poll())
+  # req(side_plot_fire())
+  # req(side_plot_firecontribution())
   req(input$side_plots)
 
   plots <- list(
-    "pollutant"=side_plot_poll(),
-    "fire_contrib"=side_plot_firecontribution(),
     "fire_count"=side_plot_fire(),
-    "precip"=side_plot_precip()
+    "precip"=side_plot_precip(),
+    "pollutant"=side_plot_poll(),
+    "fire_contrib"=side_plot_firecontribution()
   )[input$side_plots]
-
+  
   plots <- plots[!is.na(plots)]
+  plots <- plots[!unlist(lapply(plots, is.null))]
 
   plotly::subplot(plots,
                   nrows = length(plots),
@@ -53,7 +54,8 @@ output$sidePlots <- renderPlotly({
 
 side_plot_poll <- reactive({
   
-  req(meas())
+  if(is.null(meas())) return(NA)
+  
   poll <- input$poll
   req(input$running_width, poll)
   
@@ -167,14 +169,19 @@ side_plot_fire <- reactive({
   req(input$running_width)
   
   if(selected_metadata()$fire_source=="gfas"){
+    fire_value_regex="^pm25_emission$"
     fire_value="pm25_emission"
     fire_name="PM25 emission from fires"
   }else{
+    fire_value_regex="^fire_count.*$"
     fire_value="fire_count"
     fire_name="Fire count"
   }
-  
-  f <- weather() %>%
+
+
+  f <- weather()
+  f[fire_value] <- rowSums(f[,grep(fire_value_regex, names(f))], na.rm=T)
+  f <- f %>%
     dplyr::select_at(c("date", "value"=fire_value))
   
   f.rolled <- rcrea::utils.running_average(f, as.numeric(input$running_width))
@@ -253,7 +260,7 @@ side_plot_precip <- reactive({
 
 side_plot_firecontribution <- reactive({
   
-  req(meas())
+  if(is.null(meas())) return(NA)
   req(input$running_width)
   poll <- input$poll
   req(poll)

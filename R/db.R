@@ -314,10 +314,10 @@ db.add_split_regions <- function(){
   col <- db.get_collection('meas.files')
   
   col$update(
-    query = sprintf('{"metadata.fire_split_regions": {  }}'),
+    query = sprintf('{"metadata.fire_split_regions": {}}'),
     update = sprintf('{ "$set" : { "metadata.fire_split_regions" : "%s"} }', NO_SPLIT_REGION),
     multiple=T
-  )  
+  )
   
 }
 
