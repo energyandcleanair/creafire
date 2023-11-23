@@ -248,18 +248,24 @@ output$maptrajs <- renderLeaflet({
     # addProviderTiles(providers$Stamen.TonerLite,
     #                  options = providerTileOptions(noWrap = TRUE)
     # )
+<<<<<<< HEAD
     addProviderTiles('Stadia.StamenTerrain', group="Terrain",
                      options=providerTileOptions(zindex=0)) %>%
+=======
+    addProviderTiles(providers$CartoDB.Positron, group="Light") %>%
+>>>>>>> e364f15 (-basemaps)
     addProviderTiles('Esri.WorldImagery', group="Satellite",
                      options=providerTileOptions(zindex=0)) %>%
     addProviderTiles('OpenStreetMap', group = "OpenStreetMap",
                      options=providerTileOptions(zindex=0)) %>%
+    addProviderTiles('Stamen.Terrain', group="Terrain",
+                     options=providerTileOptions(zindex=0)) %>%
     # addProviderTiles("CartoDB.PositronOnlyLabels", group="Satellite") %>%
     # addProviderTiles('Esri.Topographic', group="Topographic") %>%
     # addProviderTiles('Esri.Terrain', group="Terrain") %>%
-    addProviderTiles(providers$CartoDB.Positron, group="Light") %>%
+    
     addLayersControl(
-      baseGroups = c("Terrain", "Satellite", "OpenStreetMap", "Light"),
+      baseGroups = c("Light", "Satellite", "OpenStreetMap", "Terrain"),
       overlayGroups = c("Trajectories", "Active fires",
                         names(trajs_gibs_layers),
                         names(sentinel_layers)),
