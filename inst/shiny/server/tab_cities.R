@@ -115,7 +115,9 @@ output$selectInputCountry <- renderUI({
   names(countries) = unlist(countrycode(countries, origin='iso2c', destination='country.name',
                                         custom_match = list(XK='Kosovo')))
 
-  pickerInput("country","Country", choices=countries, options = list(`actions-box` = TRUE), multiple = F)
+  pickerInput("country", "Country",
+              choices=countries,
+              options = list(`actions-box` = TRUE), multiple = F)
 })
 
 
@@ -129,7 +131,7 @@ output$selectInputCity <- renderUI({
     distinct(location_name, location_id) %>%
     tibble::deframe()
   
-  pickerInput("city","City", choices=cities, options = list(`actions-box` = TRUE), multiple = F)
+  pickerInput("city", "City", choices=cities, options = list(`actions-box` = TRUE), multiple = F)
 })
 
 
@@ -248,24 +250,20 @@ output$maptrajs <- renderLeaflet({
     # addProviderTiles(providers$Stamen.TonerLite,
     #                  options = providerTileOptions(noWrap = TRUE)
     # )
-<<<<<<< HEAD
     addProviderTiles('Stadia.StamenTerrain', group="Terrain",
                      options=providerTileOptions(zindex=0)) %>%
-=======
-    addProviderTiles(providers$CartoDB.Positron, group="Light") %>%
->>>>>>> e364f15 (-basemaps)
     addProviderTiles('Esri.WorldImagery', group="Satellite",
                      options=providerTileOptions(zindex=0)) %>%
     addProviderTiles('OpenStreetMap', group = "OpenStreetMap",
                      options=providerTileOptions(zindex=0)) %>%
-    addProviderTiles('Stamen.Terrain', group="Terrain",
-                     options=providerTileOptions(zindex=0)) %>%
+    # addProviderTiles('Stamen.Terrain', group="Terrain",
+    #                  options=providerTileOptions(zindex=0)) %>%
     # addProviderTiles("CartoDB.PositronOnlyLabels", group="Satellite") %>%
     # addProviderTiles('Esri.Topographic', group="Topographic") %>%
     # addProviderTiles('Esri.Terrain', group="Terrain") %>%
     
     addLayersControl(
-      baseGroups = c("Light", "Satellite", "OpenStreetMap", "Terrain"),
+      baseGroups = c("Terrain", "Satellite", "OpenStreetMap"),
       overlayGroups = c("Trajectories", "Active fires",
                         names(trajs_gibs_layers),
                         names(sentinel_layers)),

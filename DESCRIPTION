@@ -3,7 +3,7 @@ Type: Package
 Title: Build and browse fire/biomass burning information relevant for air quality
 Version: 0.2
 Author: Hubert Thieriot
-Maintainer: Hubert Thieriot <hubert.thieriot@gmail.com>
+Maintainer: Hubert Thieriot <hubert@energyandcleanair.org>
 Description: creafire package offers a set of functions and a shiny dashboard to build and display fire-related information relevant to air quality
 License: TBC
 Encoding: UTF-8
@@ -16,7 +16,9 @@ Imports:
     creadeweather,
     creatrajs,
     leaflet.extras2,
-    sf
+    sf,
+    shinydashboard,
+    shinyBS
 Remotes:
     tidyverse/lubridate,
     energyandcleanair/leaflet.extras2,

@@ -15,7 +15,7 @@ run_shiny <- function() {
 
 #' @export
 deploy_shiny <- function() {
-  if(!require(rsconnect)) install.packages('reconnect')
+  if(!require(rsconnect)) install.packages('rsconnect')
   if(!require(dotenv)) install.packages('dotenv')
   if(!require(devtools)) install.packages('devtools')
 
