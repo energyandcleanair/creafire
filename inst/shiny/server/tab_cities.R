@@ -248,7 +248,7 @@ output$maptrajs <- renderLeaflet({
     # addProviderTiles(providers$Stamen.TonerLite,
     #                  options = providerTileOptions(noWrap = TRUE)
     # )
-    addProviderTiles('Stamen.Terrain', group="Terrain",
+    addProviderTiles('Stadia.StamenTerrain', group="Terrain",
                      options=providerTileOptions(zindex=0)) %>%
     addProviderTiles('Esri.WorldImagery', group="Satellite",
                      options=providerTileOptions(zindex=0)) %>%
