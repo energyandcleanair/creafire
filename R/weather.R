@@ -9,6 +9,7 @@
 #' @examples
 update_weather <- function(weather,
                            meas,
+                           weather_sources,
                            duration_hour,
                            buffer_km,
                            height,
@@ -38,6 +39,7 @@ update_weather <- function(weather,
     print("Getting new weather data")
     new_weather <- creadeweather::collect_weather(
       meas_missing,
+      weather_sources=weather_sources,
       years=years,
       years_force_refresh=years,
       n_per_station=4,

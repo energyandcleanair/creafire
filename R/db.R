@@ -86,6 +86,7 @@ db.setup_db <- function(){
 db.upload_weather <- function(weather,
                               location_id,
                               location_name=NULL,
+                              weather_sources=NULL,
                               met_type,
                               height,
                               duration_hour,
@@ -99,7 +100,11 @@ db.upload_weather <- function(weather,
   filepath <- file.path(tmpdir, "weather.RDS")
   saveRDS(weather, filepath)
 
-  hours <- if(all(is.null(hours)) || all(is.na(hours))) NULL else {paste0(hours, collapse=',')}
+  format_vector <- function(x){
+    if(all(is.null(x)) || all(is.na(x))) NULL else {paste0(x, collapse=',')}
+  }
+  hours <- format_vector(hours)
+  weather_sources <- format_vector(weather_sources)
   height <- if(is.null(height) || is.na(height)) NULL else {height}
   location_name <- if(is.null(location_name)){
     rcrea::cities(id=location_id) %>% pull(name) %>% head(1)
@@ -108,6 +113,7 @@ db.upload_weather <- function(weather,
   metadata <- list(location_id=location_id,
                    location_name=location_name,
                    duration_hour=duration_hour,
+                   weather_sources=weather_sources,
                    hours=hours,
                    height=height,
                    met_type=met_type,
@@ -163,16 +169,29 @@ db.upload_meas <- function(meas, location_id, met_type, height, duration_hour, h
 }
 
 
-db.find_weather <- function(location_id, met_type=NULL, height=NULL, duration_hour=NULL, hours=NULL, buffer_km=NULL, fire_source=NULL, fire_split_regions=NULL){
+db.find_weather <- function(location_id,
+                            met_type=NULL,
+                            height=NULL,
+                            duration_hour=NULL,
+                            hours=NULL,
+                            buffer_km=NULL,
+                            fire_source=NULL,
+                            fire_split_regions=NULL,
+                            weather_sources=NULL){
   fs <- db.get_gridfs_weather()
 
-  hours <- if(all(is.null(hours)) || all(is.na(hours))) NULL else {paste0(hours, collapse=',')}
+  format_vector <- function(x){
+    if(all(is.null(x)) || all(is.na(x))) NULL else {paste0(x, collapse=',')}
+  }
+  hours <- format_vector(hours)
+  weather_sources <- format_vector(weather_sources)
   height <- if(is.null(height) || is.na(height)) NULL else {height}
   fire_split_regions <- if(is.null(fire_split_regions) || is.na(fire_split_regions)) NO_SPLIT_REGION else {fire_split_regions}
   
   filter <- list(metadata.location_id=location_id,
                  metadata.duration_hour=duration_hour,
                  metadata.hours=hours,
+                 metadata.weather_sources=weather_sources,
                  metadata.height=height,
                  metadata.met_type=met_type,
                  metadata.buffer_km=buffer_km,
@@ -319,6 +338,18 @@ db.add_split_regions <- function(){
     multiple=T
   )
   
+}
+
+db.add_weather_sources <- function(){
+  
+  fs <- db.get_gridfs_weather()
+  col <- db.get_collection('weather.files')
+  col$update(
+    # query those without metadata.weather_sources
+    query = sprintf('{"metadata.weather_sources": {}}'),
+    update = sprintf('{ "$set" : { "metadata.fire_split_regions" : "%s"} }', "noaa"),
+    multiple=T
+  )
 }
 
 

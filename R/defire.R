@@ -5,16 +5,21 @@
 #' @param date_from
 #' @param poll
 #' @param date_to
+#' @param weather_sources
 #' @param met_type
 #' @param duration_hour
 #' @param height
-#' @param radius_km
+#' @param location_ids 
+#' @param level 
+#' @param source_city 
+#' @param country 
+#' @param process_id 
+#' @param training_end_anomaly 
+#' @param use_cache 
+#' @param save_to_cache 
+#' @param fire_source 
+#' @param parallel 
 #' @param buffer_km
-#' @param fires
-#' @param add_fires
-#' @param powerplants
-#' @param folder
-#' @param upload_results
 #'
 #' @return
 #' @export
@@ -27,6 +32,7 @@ defire <- function(location_ids=NULL,
                    source_city=NULL,
                    country=NULL,
 		               process_id="city_day_mad",
+		               weather_sources=c("era5"),
                    date_from="2016-01-01",
 		               date_to=lubridate::today(),
 		               training_end_anomaly=lubridate::today(),
@@ -115,7 +121,8 @@ defire <- function(location_ids=NULL,
                                               duration_hour=duration_hour,
                                               buffer_km=buffer_km,
                                               height=height,
-                                              fire_source=fire_source)
+                                              fire_source=fire_source,
+                                              weather_sources=weather_sources)
                
                
                if(!is.null(weather) && nrow(weather)>1){stop("More than one weather cache file found")}
@@ -127,6 +134,7 @@ defire <- function(location_ids=NULL,
                      dplyr::group_by(location_id, country, geometry) %>%
                      tidyr::nest() %>%
                      dplyr::rename(meas=data),
+                   weather_sources=weather_sources,
                    years=unique(lubridate::year(m$date)),
                    years_force_refresh=NULL,
                    n_per_station=4,
@@ -149,7 +157,8 @@ defire <- function(location_ids=NULL,
                                      duration_hour=duration_hour,
                                      buffer_km=buffer_km,
                                      height=height,
-                                     fire_source=fire_source)
+                                     fire_source=fire_source,
+                                     weather_sources=weather_sources)
                }
                
                if(save_to_cache){
@@ -159,7 +168,8 @@ defire <- function(location_ids=NULL,
                                    buffer_km=buffer_km,
                                    height=height,
                                    met_type=met_type,
-                                   fire_source=fire_source)  
+                                   fire_source=fire_source,
+                                   weather_sources=weather_sources)  
                }
                saveRDS(w, weather_filepath)
               }
@@ -189,6 +199,7 @@ defire <- function(location_ids=NULL,
                                              poll=poll,
                                              output="anomaly",
                                              add_fire = T,
+                                             weather_sources=weather_sources,
                                              fire_mode = "trajectory",
                                              training_start_anomaly=date_from,
                                              training_end_anomaly=training_end_anomaly,
