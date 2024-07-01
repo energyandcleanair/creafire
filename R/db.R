@@ -229,6 +229,15 @@ db.find_meas <- function(location_id,
   fs$find(jsonlite::toJSON(filter,auto_unbox=T))
 }
 
+db.remove_meas <- function(location_id=NULL, met_type=NULL, height=NULL, duration_hour=NULL, hours=NULL, buffer_km=NULL, fire_source=NULL, fire_split_regions=NULL){
+  fs <- db.get_gridfs_meas()
+  found <- db.find_meas(location_id=location_id, met_type=met_type, height=height, duration_hour=duration_hour, hours=hours,
+                           fire_source=fire_source, buffer_km=buffer_km, fire_split_regions=fire_split_regions)
+  
+  if(nrow(found)>0) fs$remove(paste0("id:", found$id))
+  print(sprintf("%d row(s) removed", nrow(found)))
+}
+
 
 db.remove_weather <- function(location_id, met_type=NULL, height=NULL, duration_hour=NULL, hours=NULL, buffer_km=NULL, fire_source=NULL, fire_split_regions=NULL){
   fs <- db.get_gridfs_weather()
@@ -239,6 +248,61 @@ db.remove_weather <- function(location_id, met_type=NULL, height=NULL, duration_
   print(sprintf("%d row(s) removed", nrow(found)))
 }
 
+
+#' Download all weather, apply a function, and reupload
+#'
+#' @param f 
+#' @param location_id 
+#' @param met_type 
+#' @param height 
+#' @param duration_hour 
+#' @param hours 
+#' @param buffer_km 
+#' @param fire_source 
+#' @param fire_split_regions 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+db.apply_function_to_weather <- function(f=db.clean_weather_function(), location_id=NULL, met_type=NULL, height=NULL, duration_hour=NULL, hours=NULL, buffer_km=NULL, fire_source=NULL, fire_split_regions=NULL){
+  
+  weathers <- db.download_weather(location_id=location_id,
+                                  met_type=met_type,
+                                  height=height,
+                                  duration_hour=duration_hour,
+                                  hours=hours,
+                                  buffer_km=buffer_km,
+                                  fire_source=fire_source,
+                                  fire_split_regions=fire_split_regions)
+  
+  if(nrow(found)==0) return(NULL)
+  
+  weathers <- weathers %>% mutate(weather = map(weather, f))
+  
+  # Reupload
+  for(i in seq(nrow(weathers))){
+    print(sprintf("%d/%d",i,nrow(weathers)))
+    w <- weathers[i,]
+    db.upload_weather(weather=w$weather,
+                      location_id=w$location_id,
+                      location_name=w$location_name,
+                      weather_sources=w$weather_sources,
+                      met_type=w$met_type,
+                      height=w$height,
+                      duration_hour=w$duration_hour,
+                      buffer_km=w$buffer_km,
+                      hours=w$hours,
+                      fire_source=w$fire_source,
+                      fire_split_regions = w$fire_split_regions
+    )
+  }
+}
+
+db.clean_weather_function <- function(){
+  f <- function(x){x %>% filter(!is.na(air_temp_min), !is.infinite(air_temp_min))}
+  return(f)
+}
 
 db.download_weather <- function(location_id=NULL, met_type=NULL, height=NULL, duration_hour=NULL, hours=NULL, buffer_km=NULL, fire_source=NULL, fire_split_regions=NULL){
   fs <- db.get_gridfs_weather()
@@ -370,6 +434,7 @@ db.clean <- function(){
   # old <- found[found$date < "2023-10-01",]
   # fs$remove(paste0("id:", old$id))
 }
+
 
 #' Upload weather and meas cached using previous system (i.e. on disk)
 #'
