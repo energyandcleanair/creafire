@@ -112,6 +112,8 @@ output$selectInputRunning <- renderUI({
 output$selectInputCountry <- renderUI({
   req(available())
   countries <- unique(available()$country)
+  # remove NA
+  countries <- countries[!is.na(countries)]
   names(countries) = unlist(countrycode(countries, origin='iso2c', destination='country.name',
                                         custom_match = list(XK='Kosovo')))
 
