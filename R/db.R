@@ -241,8 +241,14 @@ db.remove_meas <- function(location_id=NULL, met_type=NULL, height=NULL, duratio
 
 db.remove_weather <- function(location_id, met_type=NULL, height=NULL, duration_hour=NULL, hours=NULL, buffer_km=NULL, fire_source=NULL, fire_split_regions=NULL){
   fs <- db.get_gridfs_weather()
-  found <- db.find_weather(location_id=location_id, met_type=met_type, height=height, duration_hour=duration_hour, hours=hours,
-                           fire_source=fire_source, buffer_km=buffer_km, fire_split_regions=fire_split_regions)
+  found <- db.find_weather(location_id=location_id,
+                           met_type=met_type,
+                           height=height,
+                           duration_hour=duration_hour,
+                           hours=hours,
+                           fire_source=fire_source,
+                           buffer_km=buffer_km,
+                           fire_split_regions=fire_split_regions)
 
   if(nrow(found)>0) fs$remove(paste0("id:", found$id))
   print(sprintf("%d row(s) removed", nrow(found)))
