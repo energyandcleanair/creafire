@@ -4,7 +4,8 @@ trajs_date <- reactive({
 
 
 available <- reactive({
-  w <- db.available_weather()
+  # w <- db.available_weather()
+  w <- db.available_meas()
   
   locations <- rcrea::locations(id=w$location_id, with_source = F) %>%
     distinct(id, .keep_all = T)
