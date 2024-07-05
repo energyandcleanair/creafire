@@ -204,6 +204,8 @@ output$trajsInfos <- renderUI({
   
   d <- trajs_meas_date() %>%
     tidyr::spread(variable, value)
+  
+  if(is.null(d) | nrow(d) == 0) return(HTML(""))
 
   HTML(paste0("<b>",l$name," - ",d[["poll"]],"</b><br/>",
               trajs_date(),"<br/>",

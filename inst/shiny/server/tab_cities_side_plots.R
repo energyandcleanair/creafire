@@ -71,6 +71,7 @@ side_plot_poll <- reactive({
   hovertemplate <- paste('%{y:.0f}',unit)
   
   data <- m %>%
+    tidyr::unnest(result) %>%
     filter(variable %in% c('observed', 'predicted', 'predicted_nofire')) %>%
     select(date, variable, value) %>%
     rcrea::utils.running_average(as.numeric(input$running_width)) %>%
@@ -278,6 +279,7 @@ side_plot_firecontribution <- reactive({
   hovertemplate <- paste('%{y:.0f}',unit)
   
   data <- m %>%
+    tidyr::unnest(result) %>%
     filter(variable %in% c('observed', 'predicted', 'predicted_nofire')) %>%
     select(date, variable, value) %>%
     rcrea::utils.running_average(as.numeric(input$running_width)) %>%

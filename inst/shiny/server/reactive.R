@@ -84,13 +84,14 @@ weather <- reactive({
     hours=m$hours,
     fire_source=m$firesource,
     fire_split_regions = m$fire_split_regions
-  ) %>%
-    filter((height==m$height) | (is.na(m$height) & is.na(height)))
+  ) 
   
   if(is.null(w)){
     return(NULL)
   }
+  
   w %>%
+    filter((height==m$height) | (is.na(m$height) & is.na(height))) %>%
     select(weather) %>% 
     tidyr::unnest(weather)
 })
@@ -190,6 +191,7 @@ trajs_meas_date <- reactive({
   req(trajs_date())
   
   meas() %>%
+    tidyr::unnest(result) %>%
     dplyr::filter(date==trajs_date())
   
 })
