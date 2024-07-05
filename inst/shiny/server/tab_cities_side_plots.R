@@ -165,7 +165,8 @@ side_plot_poll <- reactive({
 
 side_plot_fire <- reactive({
   
-  req(weather())
+  if(is.null(weather())) return(NA)
+  
   req(selected_metadata())
   req(input$running_width)
   
@@ -223,7 +224,8 @@ side_plot_fire <- reactive({
 
 side_plot_precip <- reactive({
   
-  req(weather())
+  if(is.null(weather())) return(NA)
+  
   req(input$running_width)
   
   f <- weather() %>%
