@@ -13,9 +13,6 @@ output$selectInputSidePlots <- renderUI({
 
 output$sidePlots <- renderPlotly({
 
-  # req(side_plot_poll())
-  # req(side_plot_fire())
-  # req(side_plot_firecontribution())
   req(input$side_plots)
 
   plots <- list(
