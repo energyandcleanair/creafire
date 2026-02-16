@@ -1,4 +1,4 @@
-# fire_dashboard
+# fire_attribution_dashboard
 
 This repository contains a Shiny dashboard showing biomass burning attribution results. The dashboard directly fetches data from CREA MongoDB.
 
