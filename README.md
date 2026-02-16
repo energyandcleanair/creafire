@@ -1,7 +1,24 @@
 # creafire
 
+Shiny dashboard and pipeline scripts for fire/biomass burning impact on air quality.
 
+## What it does
 
+- **Dashboard** (`inst/shiny/`): interactive Shiny app showing fire-related air quality data, deployed to shinyapps.io.
+- **Defire pipeline** (`R/defire.R`): orchestrates weather collection, fire-deweathering, and result caching. Designed to run via cron jobs.
+- **Flaring** (`R/flaring.R`): downloads and processes NOAA nighttime fire (flaring) data.
+
+## Key dependencies
+
+- [`creadeweather`](https://github.com/energyandcleanair/creadeweather): weather collection, deweathering models, and MongoDB caching of fire-weather/measurement data (db functions).
+- [`creatrajs`](https://github.com/energyandcleanair/creatrajs): trajectory computation and fire attachment.
+- [`rcrea`](https://github.com/energyandcleanair/rcrea): measurement data and location metadata.
+
+## Setup
+
+Requires a `.Renviron` file with:
+- `CREA_MONGODB_URL`: MongoDB connection string for the `creafire` database.
+- Shinyapps.io credentials for dashboard deployment.
 
 ## To Do
 Some fire files are wrong e.g.
