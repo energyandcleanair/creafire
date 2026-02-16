@@ -117,7 +117,7 @@ defire <- function(location_ids=NULL,
              weather_filepath <- file.path(tempdir(), "weather.RDS")
              
              if(use_cache){
-               weather <- db.download_weather(location_id=location_id,
+               weather <- creadeweather::db.download_weather(location_id=location_id,
                                               duration_hour=duration_hour,
                                               buffer_km=buffer_km,
                                               height=height,
@@ -162,7 +162,7 @@ defire <- function(location_ids=NULL,
                }
                
                if(save_to_cache){
-                 db.upload_weather(w,
+                 creadeweather::db.upload_weather(w,
                                    location_id=location_id,
                                    duration_hour=duration_hour,
                                    buffer_km=buffer_km,
@@ -229,7 +229,7 @@ defire <- function(location_ids=NULL,
              dplyr::select(
                location_id, date, poll, unit, source, observed, predicted, predicted_nofire, model
              )
-           db.upload_meas(m,
+           creadeweather::db.upload_meas(m,
                           location_id=location_id,
                           duration_hour=duration_hour,
                           buffer_km=buffer_km,
